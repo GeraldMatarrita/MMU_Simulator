@@ -138,7 +138,7 @@ public class MMU {
             List<Integer> pages = symbolTable.get(ptr);
             for (Integer pageId : pages) {
                 for (int i = 0; i < realMemory.length; i++) {
-                    if (realMemory[i] != null && Objects.equals(realMemory[i].getId(), pageId)) {
+                    if (realMemory[i] != null && Objects.equals(realMemory[i].getPhysicalAddress(), ptr)) {
                         realMemory[i] = null;
                         remainingRAM++;
                     }

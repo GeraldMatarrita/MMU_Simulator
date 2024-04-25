@@ -3,9 +3,9 @@ public class Main {
         MMU mmu = new MMU();
 
 
-        mmu.new_(1, 4003);
-        mmu.new_(2, 2000);
-        mmu.delete(2);
+        mmu.new_(1, 2000);
+        mmu.new_(2, 4003);
+        mmu.delete(1);
         mmu.new_(3, 1000);
     }
 }
