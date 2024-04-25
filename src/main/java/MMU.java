@@ -15,7 +15,7 @@ public class MMU {
         virtualMemory = new ArrayList<>();
         realMemory = new Page[MAX_RAM_KB];
         remainingRAM = MAX_RAM_KB;
-        symbolTable = new HashMap<>();
+        symbolTable = new HashMap<Integer, List<Integer>>();
     }
 
     public static List<Page> getVirtualMemory() {
@@ -51,21 +51,20 @@ public class MMU {
     }
 
     /*
-        * Create a new process in the memory
-        * @param pid The process ID
-        * @param size The size of the process in bytes
-        * @return The pointer in the real memory where the process is stored
+     * Create a new process in the memory
+     * @param pid The process ID
+     * @param size The size of the process in bytes
+     * @return The pointer in the real memory where the process is stored
      */
     public Integer new_(Integer pid, Integer size) {
 
-        int result = calculatePagesNeeded(size);
-
+        int remainingPages = calculatePagesNeeded(size);
+        List<Integer> pages = new ArrayList<>();
         // Check if the RAM is not full
         if (remainingRAM > 0) {
             // Create an array of pages to store them in the symbol table
-            List<Integer> pages = new ArrayList<>();
 
-            int remainingPages = result; // Number of pages to be stored in the RAM
+            // Number of pages to be stored in the RAM
             int ramIterator = 0; // Pointer to iterate over the RAM
 
             // While there is RAM available and there are pages to store
@@ -89,28 +88,88 @@ public class MMU {
                     ramIterator++;
                 }
             }
-
-            // If there are remaining pages, store them in the virtual memory
-            if (remainingPages > 0) {
-                for (int i = 0; i < remainingPages; i++) {
-                    Page page = new Page(pid);
-                    virtualMemory.add(page);
-                    pages.add(page.getId());
-                }
-            }
-
-            // Store the pages in the symbol table with the corresponding PID
-            symbolTable.put(ptrCounter, pages);
-            ptrCounter++;
         }
+
+        // If there are remaining pages, store them in the virtual memory
+        if (remainingPages > 0) {
+            for (int i = 0; i < remainingPages; i++) {
+                Page page = new Page(pid);
+                virtualMemory.add(page);
+                pages.add(page.getId());
+            }
+        }
+
+        // Store the pages in the symbol table with the corresponding PID
+        symbolTable.put(ptrCounter, pages);
+        ptrCounter++;
+
 
         return ptrCounter;
     }
 
     /*
-        * Calculate the number of pages needed to store the process
-        * @param size The size of the process in bytes
-        * @return The number of pages needed to store the process
+     * Use the memory assigned to the given pointer
+     * @param ptr The pointer to the memory assigned to the process
+     * @throws NotInRealMemoryException If the pointer is not in the real memory
+     */
+
+    public void use(Integer ptr) throws NotInRealMemoryException{
+        // Check if the pointer is in the symbol table if not throw an exception
+        if (!symbolTable.containsKey(ptr)) {
+            throw new NotInRealMemoryException("The pointer is not in the real memory");
+        }
+    }
+
+    /*
+     * Delete all the pages in the real memory that belong to the given pointer
+     * @param ptr The pointer to the memory assigned to the process
+     */
+    public void delete(Integer ptr) {
+        // Check if the pointer is in the symbol table
+        if (symbolTable.containsKey(ptr)) {
+            // Iterate over the real memory to free the memory used by the pointer
+
+            for (int i = 0; i < realMemory.length; i++) {
+                if (realMemory[i] != null && Objects.equals(realMemory[i].getPhysicalAddress(), ptr)) {
+                    realMemory[i] = null;
+                    remainingRAM++;
+                }
+            }
+
+            // Remove the pointer from the symbol table
+            symbolTable.remove(ptr);
+        }
+    }
+
+    /*
+     * Kill the process with the given PID
+     * @param pid The process ID
+     */
+    public void kill(Integer pid) {
+
+        List<Integer> ptrsToRemove = new ArrayList<>();
+        // Iterate over the real memory to free the memory used by the process
+        for (int i = 0; i < realMemory.length; i++) {
+            if (realMemory[i] != null && Objects.equals(realMemory[i].getPId(), pid)) {
+                // Add the pointer to the list of pointers to remove from the symbol table
+                if(!ptrsToRemove.contains(realMemory[i].getPhysicalAddress())){
+                    ptrsToRemove.add(realMemory[i].getPhysicalAddress());
+                }
+                realMemory[i] = null;
+                remainingRAM++;
+            }
+        }
+
+        // Remove the pointers with their pages from the symbol table
+        for (Integer ptr : ptrsToRemove) {
+            symbolTable.remove(ptr);
+        }
+    }
+
+    /*
+     * Calculate the number of pages needed to store the process
+     * @param size The size of the process in bytes
+     * @return The number of pages needed to store the process
      */
     private static int calculatePagesNeeded(Integer size) {
         int result;
@@ -128,48 +187,5 @@ public class MMU {
         }
         return result;
     }
-
-    public void use(Integer ptr) {
-
-    }
-
-    /*
-    * Delete all the pages in the real memory that belong to the given pointer
-    * @param ptr The pointer to the memory assigned to the process
-     */
-    public void delete(Integer ptr) {
-        // Check if the pointer is in the symbol table
-        if (symbolTable.containsKey(ptr)) {
-            // Get the pages that belong to the pointer
-            List<Integer> pages = symbolTable.get(ptr);
-            // Iterate over the real memory to free the memory used by the pointer
-            for (Integer pageId : pages) {
-                for (int i = 0; i < realMemory.length; i++) {
-                    if (realMemory[i] != null && Objects.equals(realMemory[i].getPhysicalAddress(), ptr)) {
-                        realMemory[i] = null;
-                        remainingRAM++;
-                    }
-                }
-            }
-
-            // Remove the pointer from the symbol table
-            symbolTable.remove(ptr);
-        }
-    }
-
-    /*
-    * Kill the process with the given PID
-    * @param pid The process ID
-     */
-    public void kill(Integer pid) {
-        // Iterate over the real memory to free the memory used by the process
-        for (int i = 0; i < realMemory.length; i++) {
-            if (realMemory[i] != null && Objects.equals(realMemory[i].getPId(), pid)) {
-                realMemory[i] = null;
-                remainingRAM++;
-            }
-        }
-    }
-
 
 }
