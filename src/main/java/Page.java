@@ -34,4 +34,14 @@ public class Page {
     public Integer getPId() {
         return pId;
     }
+
+    @Override
+    public String toString() {
+        return "Page{" +
+                "id=" + id +
+                ", physicalAddress=" + physicalAddress +
+                ", inRealMemory=" + inRealMemory +
+                ", pId=" + pId +
+                '}';
+    }
 }
