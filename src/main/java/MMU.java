@@ -133,9 +133,16 @@ public class MMU {
 
     }
 
+    /*
+    * Delete all the pages in the real memory that belong to the given pointer
+    * @param ptr The pointer to the memory assigned to the process
+     */
     public void delete(Integer ptr) {
+        // Check if the pointer is in the symbol table
         if (symbolTable.containsKey(ptr)) {
+            // Get the pages that belong to the pointer
             List<Integer> pages = symbolTable.get(ptr);
+            // Iterate over the real memory to free the memory used by the pointer
             for (Integer pageId : pages) {
                 for (int i = 0; i < realMemory.length; i++) {
                     if (realMemory[i] != null && Objects.equals(realMemory[i].getPhysicalAddress(), ptr)) {
@@ -144,12 +151,24 @@ public class MMU {
                     }
                 }
             }
+
+            // Remove the pointer from the symbol table
             symbolTable.remove(ptr);
         }
     }
 
+    /*
+    * Kill the process with the given PID
+    * @param pid The process ID
+     */
     public void kill(Integer pid) {
-
+        // Iterate over the real memory to free the memory used by the process
+        for (int i = 0; i < realMemory.length; i++) {
+            if (realMemory[i] != null && Objects.equals(realMemory[i].getPId(), pid)) {
+                realMemory[i] = null;
+                remainingRAM++;
+            }
+        }
     }
 
 
