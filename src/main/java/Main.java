@@ -8,14 +8,14 @@ public class Main {
         try {
             mmu.new_(1, 2003);
             mmu.new_(1, 1000);
-            mmu.new_(3, 1000);
+            mmu.new_(3, 800);
             mmu.delete(1);
             mmu.new_(4, 500);
             mmu.kill(1);
-            mmu.new_(4, 4000);
+            mmu.new_(4, 5000);
             mmu.use(1);
         } catch (NotInRealMemoryException e) {
-            System.out.println(e.getMessage());
+            System.err.println(e.getMessage());
         }
 
         Page[] realMemory = MMU.getRealMemory();
@@ -45,5 +45,7 @@ public class Main {
             }
             System.out.println();
         }
+
+        System.out.println("\nFragmentation: " + MMU.getFragmentation() + " KB");
     }
 }

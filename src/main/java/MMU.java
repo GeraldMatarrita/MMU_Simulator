@@ -9,6 +9,8 @@ public class MMU {
     private static int remainingRAM;
     private static Map<Integer, List<Integer>> symbolTable;
 
+    private static Integer fragmentation = 0;
+
     private static int ptrCounter = 1;
 
     public MMU() {
@@ -62,8 +64,6 @@ public class MMU {
         List<Integer> pages = new ArrayList<>();
         // Check if the RAM is not full
         if (remainingRAM > 0) {
-            // Create an array of pages to store them in the symbol table
-
             // Number of pages to be stored in the RAM
             int ramIterator = 0; // Pointer to iterate over the RAM
 
@@ -177,15 +177,22 @@ public class MMU {
         if (size > KB) {
             // Calculate the number of pages needed
             result = size / KB;
-            int residue = size % 1000;
+            int residue = size % KB;
+            if (residue > 0) {
+                fragmentation += KB - residue;
+            }
             if (residue > 0) {
                 result++;
             }
         } else {
             // If the size is less than 1KB, then only one page is needed
             result = 1;
+            fragmentation += KB - size;
         }
         return result;
     }
 
+    public static Integer getFragmentation() {
+        return fragmentation;
+    }
 }
