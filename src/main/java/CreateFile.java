@@ -16,25 +16,39 @@ public class CreateFile {
             this.id = id;
             this.isDeleted = false;
         }
+
         @Override
         public String toString() {
-            return "["  + id + isDeleted +
+            return "[" + id + isDeleted +
                     ']';
         }
     }
 
+    private static final int CANTIDAD_INSTRUCCIONES = 5;
+    private static final double PORCENTAJE_KILL = 0.05;
+    private static final double PORCENTAJE_DELETE = 0.20;
+    private static final double PORCENTAJE_USE = 0.30;
     private static final int MIN_SIZE = 3000;
-    private static final int MAX_SIZE = 10000;
+    private static final int MAX_SIZE = 20000;
     private static final Random random = new Random();
     private static final List<IdRecord> idList = new ArrayList<>();
     private static final String FILENAME = "instructions.txt";
     private static int idCounter = 1;
 
-    public static void writeInstructionsToFile() throws IOException {
+    public static void main(String[] args) {
+        try {
+            writeInstructionsToFile();
+        } catch (IOException e) {
+            System.err.println("An error occurred while writing to the file: " + e.getMessage());
+        }
+    }
+
+    private static void writeInstructionsToFile() throws IOException {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(FILENAME))) {
             int killCount = 0;
             int deleteCount = 0;
-            int instructionCount = 10;
+            int useCount = 0;
+            int instructionCount = CANTIDAD_INSTRUCCIONES;
 
             for (int i = 0; i < instructionCount; i++) {
 
@@ -42,24 +56,31 @@ public class CreateFile {
                 String instruction;
 
                 if (i >= 2) { // Realizar operaciones kill y delete después de las primeras n iteraciones
-                    if (chance < 0.15 && killCount < instructionCount * 0.05) {
+                    if (chance < PORCENTAJE_KILL && killCount < instructionCount * PORCENTAJE_KILL) {
                         int idToKill = getRandomId();
                         if (idToKill != -1) {
                             instruction = "kill(" + idToKill + ")";
                             markAsDeleted(idToKill); // Marca el ID seleccionado como eliminado
                             killCount++;
                         } else {
-                            continue; // Saltar si no hay IDs válidos para kill
+                            instruction = generateNewInstruction();
                         }
-                    } else if (chance < 0.35 && deleteCount < instructionCount * 0.30) {
+                    } else if (chance < PORCENTAJE_KILL + PORCENTAJE_DELETE && deleteCount < instructionCount * PORCENTAJE_DELETE) {
                         int indexToDelete = getRandomIndice();
                         if (indexToDelete != -1) {
-                            indexToDelete = indexToDelete == 0 ? indexToDelete + 1 : indexToDelete;
                             instruction = "delete(" + indexToDelete + ")";
                             idList.get(indexToDelete).isDeleted = true; // Marca el índice seleccionado como eliminado
                             deleteCount++;
                         } else {
-                            continue; // Saltar si no hay índices válidos para delete
+                            instruction = generateNewInstruction();
+                        }
+                    } else if (chance < PORCENTAJE_KILL + PORCENTAJE_DELETE + PORCENTAJE_USE && useCount < instructionCount * PORCENTAJE_USE) {
+                        int idUse = getRandomId();
+                        if (idUse != -1) {
+                            instruction = "use(" + idUse + ")";
+                            useCount++;
+                        } else {
+                            instruction = generateNewInstruction();
                         }
                     } else {
                         instruction = generateNewInstruction();
@@ -69,7 +90,7 @@ public class CreateFile {
                 }
 
                 System.out.println("Instrucción generada: " + instruction);
-                System.out.println("Estado actual de idList: " + idList);
+                System.out.println("Estado actual de idList: " + idList.toString());
                 System.out.println("\n\n");
 
                 writer.write(instruction);
@@ -121,5 +142,4 @@ public class CreateFile {
                 .toList();
         return validIds.isEmpty() ? -1 : validIds.get(random.nextInt(validIds.size()));
     }
-
 }

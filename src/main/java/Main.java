@@ -5,11 +5,11 @@ import java.util.Map;
 public class Main {
     public static void main(String[] args) {
 
-        try {
-            CreateFile.writeInstructionsToFile();
-        } catch (IOException e) {
-            System.err.println("An error occurred while writing to the file: " + e.getMessage());
-        }
+//        try {
+//            CreateFile.writeInstructionsToFile();
+//        } catch (IOException e) {
+//            System.err.println("An error occurred while writing to the file: " + e.getMessage());
+//        }
 
         List<String> instructions = null;
         try {
@@ -18,49 +18,10 @@ public class Main {
             System.err.println("An error occurred while reading the file: " + e.getMessage());
         }
 
-        MMU mmu = new MMU();
-
-        try {
-            mmu.new_(1, 2003);
-            mmu.new_(1, 1000);
-            mmu.new_(3, 800);
-            mmu.delete(1);
-            mmu.new_(4, 500);
-            mmu.kill(1);
-            mmu.new_(4, 5000);
-            mmu.use(1);
-        } catch (Exception e) {
-            System.err.println(e.getMessage());
-        }
-
-        Page[] realMemory = MMU.getRealMemory();
-        System.out.println("Real memory: ");
-        int iter = 0;
-        for (Page page : realMemory) {
-            if (page != null) {
-                System.out.print(iter++ + " ");
-                System.out.println(page);
-            } else {
-                System.out.println(iter++ + " null");
-            }
-        }
-
-        List<Page> virtualMemory = MMU.getVirtualMemory();
-        System.out.println("\nVirtual memory: ");
-        for (Page page : virtualMemory) {
-            System.out.println("Page ID: " + page.getId() + ", Process ID: " + page.getPId());
-        }
-
-        Map<Integer, List<Integer>> symbolTable = MMU.getSymbolTable();
-        System.out.println("\nSymbol table: ");
-        for (Map.Entry<Integer, List<Integer>> entry : symbolTable.entrySet()) {
-            System.out.print("Ptr: " + entry.getKey() + ", Pages: ");
-            for (Integer page : entry.getValue()) {
-                System.out.print(page + ", ");
-            }
-            System.out.println();
-        }
-
+        MMU.execute(instructions);
+        MMU.printRealMemory();
+        MMU.printVirtualMemory();
+        MMU.printSymbolTable();
         System.out.println("\nFragmentation: " + MMU.getFragmentation() + " KB");
     }
 }
