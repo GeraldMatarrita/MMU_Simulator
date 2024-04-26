@@ -14,7 +14,7 @@ public class Main {
             mmu.kill(1);
             mmu.new_(4, 5000);
             mmu.use(1);
-        } catch (NotInRealMemoryException e) {
+        } catch (Exception e) {
             System.err.println(e.getMessage());
         }
 

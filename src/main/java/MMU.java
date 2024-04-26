@@ -17,39 +17,19 @@ public class MMU {
         virtualMemory = new ArrayList<>();
         realMemory = new Page[MAX_RAM_KB];
         remainingRAM = MAX_RAM_KB;
-        symbolTable = new HashMap<Integer, List<Integer>>();
+        symbolTable = new HashMap<>();
     }
 
     public static List<Page> getVirtualMemory() {
         return virtualMemory;
     }
 
-    public static void setVirtualMemory(List<Page> virtualMemory) {
-        MMU.virtualMemory = virtualMemory;
-    }
-
     public static Page[] getRealMemory() {
         return realMemory;
     }
 
-    public static void setRealMemory(Page[] realMemory) {
-        MMU.realMemory = realMemory;
-    }
-
-    public static Integer getRemainingRAM() {
-        return remainingRAM;
-    }
-
-    public static void setRemainingRAM(Integer remainingRAM) {
-        MMU.remainingRAM = remainingRAM;
-    }
-
     public static Map<Integer, List<Integer>> getSymbolTable() {
         return symbolTable;
-    }
-
-    public static void setSymbolTable(Map<Integer, List<Integer>> symbolTable) {
-        MMU.symbolTable = symbolTable;
     }
 
     /*
@@ -113,10 +93,22 @@ public class MMU {
      * @throws NotInRealMemoryException If the pointer is not in the real memory
      */
 
-    public void use(Integer ptr) throws NotInRealMemoryException{
+    public void use(Integer ptr) throws Exception {
         // Check if the pointer is in the symbol table if not throw an exception
-        if (!symbolTable.containsKey(ptr)) {
-            throw new NotInRealMemoryException("The pointer is not in the real memory");
+        if (symbolTable.containsKey(ptr)){
+            List<Integer> pagesIds = symbolTable.get(ptr);
+            for (Integer pageId : pagesIds) {
+                for (Page page : realMemory) {
+                    if (page != null && Objects.equals(page.getId(), pageId)) {
+                        System.out.println("Using page " + pageId + " of process " + page.getPId());
+                    } else {
+                        // Algoritmo de paginación
+                        return;
+                    }
+                }
+            }
+        } else {
+            throw new Exception("The pointer is not in the symbol table");
         }
     }
 
@@ -147,13 +139,13 @@ public class MMU {
      */
     public void kill(Integer pid) {
 
-        List<Integer> ptrsToRemove = new ArrayList<>();
+        List<Integer> pointersToRemove = new ArrayList<>();
         // Iterate over the real memory to free the memory used by the process
         for (int i = 0; i < realMemory.length; i++) {
             if (realMemory[i] != null && Objects.equals(realMemory[i].getPId(), pid)) {
                 // Add the pointer to the list of pointers to remove from the symbol table
-                if(!ptrsToRemove.contains(realMemory[i].getPhysicalAddress())){
-                    ptrsToRemove.add(realMemory[i].getPhysicalAddress());
+                if(!pointersToRemove.contains(realMemory[i].getPhysicalAddress())){
+                    pointersToRemove.add(realMemory[i].getPhysicalAddress());
                 }
                 realMemory[i] = null;
                 remainingRAM++;
@@ -161,9 +153,12 @@ public class MMU {
         }
 
         // Remove the pointers with their pages from the symbol table
-        for (Integer ptr : ptrsToRemove) {
+        for (Integer ptr : pointersToRemove) {
             symbolTable.remove(ptr);
         }
+
+        // Remove the pages from the virtual memory
+        virtualMemory.removeIf(page -> Objects.equals(page.getPId(), pid));
     }
 
     /*
