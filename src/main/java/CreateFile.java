@@ -33,15 +33,7 @@ public class CreateFile {
     private static final Random random = new Random();
     private static final List<IdRecord> idList = new ArrayList<>();
     private static final String FILENAME = "instructions.txt";
-    private static int idCounter = 1;
-
-    public static void main(String[] args) {
-        try {
-            writeInstructionsToFile();
-        } catch (IOException e) {
-            System.err.println("An error occurred while writing to the file: " + e.getMessage());
-        }
-    }
+    private static int idCounter = 0;
 
     public static void writeInstructionsToFile() throws IOException {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(FILENAME))) {
@@ -75,7 +67,7 @@ public class CreateFile {
                             instruction = generateNewInstruction();
                         }
                     } else if (chance < PORCENTAJE_KILL + PORCENTAJE_DELETE + PORCENTAJE_USE && useCount < instructionCount * PORCENTAJE_USE) {
-                        int idUse = getRandomId();
+                        int idUse = getRandomIndice();
                         if (idUse != -1) {
                             instruction = "use(" + idUse + ")";
                             useCount++;
