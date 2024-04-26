@@ -239,7 +239,7 @@ public class MMU {
                         kill(pid);
                         break;
                     case "use":
-                        use(pid);
+                        use(ptr);
                         break;
                     default:
                         System.out.println("Invalid command: " + command);
