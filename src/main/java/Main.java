@@ -11,6 +11,13 @@ public class Main {
             System.err.println("An error occurred while writing to the file: " + e.getMessage());
         }
 
+        List<String> instructions = null;
+        try {
+            instructions = ReadFile.readLines("instructions.txt");
+        } catch (IOException e) {
+            System.err.println("An error occurred while reading the file: " + e.getMessage());
+        }
+
         MMU mmu = new MMU();
 
         try {
