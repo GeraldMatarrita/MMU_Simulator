@@ -24,12 +24,12 @@ public class CreateFile {
         }
     }
 
-    private static final int CANTIDAD_INSTRUCCIONES = 5;
+    private static final int CANTIDAD_INSTRUCCIONES = 10;
     private static final double PORCENTAJE_KILL = 0.05;
     private static final double PORCENTAJE_DELETE = 0.20;
     private static final double PORCENTAJE_USE = 0.30;
-    private static final int MIN_SIZE = 3000;
-    private static final int MAX_SIZE = 20000;
+    private static final int MIN_SIZE = 1000;
+    private static final int MAX_SIZE = 5000;
     private static final Random random = new Random();
     private static final List<IdRecord> idList = new ArrayList<>();
     private static final String FILENAME = "instructions.txt";
@@ -43,7 +43,7 @@ public class CreateFile {
         }
     }
 
-    private static void writeInstructionsToFile() throws IOException {
+    public static void writeInstructionsToFile() throws IOException {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(FILENAME))) {
             int killCount = 0;
             int deleteCount = 0;
@@ -89,9 +89,9 @@ public class CreateFile {
                     instruction = generateNewInstruction();
                 }
 
-                System.out.println("Instrucción generada: " + instruction);
-                System.out.println("Estado actual de idList: " + idList.toString());
-                System.out.println("\n\n");
+//                System.out.println("Instrucción generada: " + instruction);
+//                System.out.println("Estado actual de idList: " + idList.toString());
+//                System.out.println("\n\n");
 
                 writer.write(instruction);
                 writer.newLine();

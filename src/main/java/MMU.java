@@ -2,16 +2,16 @@ import java.util.*;
 
 public class MMU {
 
-    private static List<Page> virtualMemory;
-    private static Page[] realMemory;
-    private static final Integer MAX_RAM_KB = 10; // Max space for physical memory
+    private static final Integer MAX_RAM_KB = 15; // Max space for physical memory
     private static final Integer KB = 1000;
-    private static int remainingRAM;
-    private static Map<Integer, List<Integer>> symbolTable;
+    private static int remainingRAM = MAX_RAM_KB;
+    private static List<Page> virtualMemory = new ArrayList<>();
+    private static Page[] realMemory = new Page[MAX_RAM_KB];
+    private static Map<Integer, List<Integer>> symbolTable = new HashMap<>();
 
     private static Integer fragmentation = 0;
 
-    private static int ptrCounter = 1;
+    private static int ptrCounter = 0;
 
     public MMU() {
         virtualMemory = new ArrayList<>();
@@ -116,7 +116,7 @@ public class MMU {
                 }
             }
         } else {
-            throw new Exception("The pointer is not in the symbol table");
+            throw new Exception("The pointer " + ptr + " is not in the symbol table");
         }
     }
     /*
@@ -286,6 +286,7 @@ public class MMU {
      */
     public static void printSymbolTable() {
         System.out.println("=================================");
+        System.out.println("\nSymbol table: ");
         for (Map.Entry<Integer, List<Integer>> entry : symbolTable.entrySet()) {
             System.out.print("Ptr: " + entry.getKey() + ", Pages: ");
             for (Integer page : entry.getValue()) {
