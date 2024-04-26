@@ -97,14 +97,18 @@ public class MMU {
         // Check if the pointer is in the symbol table if not throw an exception
         if (symbolTable.containsKey(ptr)){
             List<Integer> pagesIds = symbolTable.get(ptr);
+            boolean pageInRealMemory = false;
             for (Integer pageId : pagesIds) {
                 for (Page page : realMemory) {
                     if (page != null && Objects.equals(page.getId(), pageId)) {
+                        pageInRealMemory = true;
                         System.out.println("Using page " + pageId + " of process " + page.getPId());
-                    } else {
-                        // Algoritmo de paginación
-                        return;
+                        break;
                     }
+                }
+                if (!pageInRealMemory) {
+                    System.out.println("Page fault, page " + pageId + " is not in the real memory. Please use a pagination algorithm to load the page into the real memory.");
+                    return;
                 }
             }
         } else {

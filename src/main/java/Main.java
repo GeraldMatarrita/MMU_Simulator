@@ -1,8 +1,16 @@
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
 public class Main {
     public static void main(String[] args) {
+
+        try {
+            CreateFile.writeInstructionsToFile();
+        } catch (IOException e) {
+            System.err.println("An error occurred while writing to the file: " + e.getMessage());
+        }
+
         MMU mmu = new MMU();
 
         try {
