@@ -4,7 +4,7 @@ public class Page {
     private Boolean inRealMemory = false;
     private Integer pId;
 
-    private static Integer idCounter = 1;
+    private static Integer idCounter = 0;
 
     public Page(Integer pId) {
         this.id = idCounter++;
