@@ -17,10 +17,13 @@ public class Main {
 //        } catch (IOException e) {
 //            System.err.println("An error occurred while reading the file: " + e.getMessage());
 //        }
-        instructions.add("new(1,14200)");
+        instructions.add("new(1,10000)");
         instructions.add("new(2,4500)");
+        instructions.add("new(3,5000)");
         instructions.add("use(0)");
-        instructions.add("use(1)");
+        instructions.add("use(0)");
+        instructions.add("use(2)");
+        instructions.add("use(0)");
 
         MMU.execute(instructions);
         MMU.printRealMemory();
