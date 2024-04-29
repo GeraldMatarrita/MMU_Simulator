@@ -63,16 +63,13 @@ public class MMU {
 
         List<Page> ptrPages = symbolTable.get(ptr);
         List<Page> pagesToMove = new ArrayList<>();
+        Set<Page> realMemorySet = new HashSet<>(Arrays.asList(realMemory));
+
         for (Page searchedPage : ptrPages) {
-            boolean pageInRealMemory = false;
-            for (Page realPage : realMemory) {
-                if (realPage != null && searchedPage == realPage) {
-                    pageInRealMemory = true;
-                    System.out.println("Using page " + searchedPage.getId() + " of process " + searchedPage.getPId());
-                    break;
-                }
-            }
-            if (!pageInRealMemory) {
+            if (realMemorySet.contains(searchedPage)) {
+                searchedPage.setReferenceBit(true);
+                System.out.println("Using page " + searchedPage.getId() + " of process " + searchedPage.getPId());
+            } else {
                 pageFaults++;
                 pagesToMove.add(searchedPage);
             }
@@ -139,8 +136,8 @@ public class MMU {
         -------------------------------------
     */
     /*
-        * FIFO algorithm to free memory
-        * @param remainingPages The number of pages needed to store the process
+     * FIFO algorithm to free memory
+     * @param remainingPages The number of pages needed to store the process
      */
     public static void fifo(int remainingPages) {
 
@@ -166,7 +163,22 @@ public class MMU {
     }
 
     public static void sc(int remainingPages) {
-        System.out.println("SC algorithm");
+        int iterator = 0;
+        while (remainingRAM < remainingPages) {
+            Page page = realMemory[iterator];
+            if (page != null) {
+                if (page.getReferenceBit()) {
+                    page.setReferenceBit(false);
+                } else {
+                    page.setPhysicalAddress(null);
+                    page.setInRealMemory(false);
+                    virtualMemory.add(page);
+                    realMemory[iterator] = null;
+                    remainingRAM++;
+                }
+            }
+            iterator = (iterator + 1) % MAX_RAM_KB;
+        }
     }
 
     public static void mru(int remainingPages) {
@@ -194,7 +206,7 @@ public class MMU {
 
         // Iterate over the real memory to store the new pages in the empty spaces
         int ramIterator = 0;
-        for (int i = 0; i < remainingPages; i++) {
+        while (remainingPages > 0){
             if (realMemory[ramIterator] == null) {
                 // Create a new page and store it in the real memory
                 Page page = new Page(pid);
@@ -204,6 +216,7 @@ public class MMU {
                 pages.add(page); // Add the page to the list of pages to store in the symbol table
                 remainingRAM--; // Decrease the remaining RAM
                 pageFaults++; // Increase the page faults
+                remainingPages--;
             }
 
             // Move the iterator to the next position. If it reaches the end, then start from the beginning
@@ -220,28 +233,32 @@ public class MMU {
     }
 
     /*
-        * Store the pages in the real memory
-        * @param pages The pages that already exist in the real memory
-        * @param ptr The pointer to the memory assigned to the process
+     * Store the pages in the real memory
+     * @param pages The pages that already exist in the real memory
+     * @param ptr The pointer to the memory assigned to the process
      */
     private static void storeOldPages(List<Page> pages, int ptr) {
         int ramIterator = 0;
+        int ramainingPages = pages.size();
 
         // Iterate over the real memory to store the pages in the empty spaces
-        for (Page page : pages) {
-            if (realMemory[ramIterator] == null) {
-                // Store the page in the real memory
-                page.setInRealMemory(true);
-                page.setPhysicalAddress(ptr);
-                realMemory[ramIterator] = page;
-                remainingRAM--; // Decrease the remaining RAM
-            }
+        while (remainingRAM > 0) {
+            for (Page page : pages) {
+                if (realMemory[ramIterator] == null) {
+                    // Store the page in the real memory
+                    page.setInRealMemory(true);
+                    page.setPhysicalAddress(ptr);
+                    realMemory[ramIterator] = page;
+                    remainingRAM--; // Decrease the remaining RAM
+                    ramainingPages--; // Decrease the remaining pages
+                }
 
-            // Move the iterator to the next position. If it reaches the end, then start from the beginning
-            if (ramIterator == MAX_RAM_KB - 1) {
-                ramIterator = 0;
-            } else {
-                ramIterator++;
+                // Move the iterator to the next position. If it reaches the end, then start from the beginning
+                if (ramIterator == MAX_RAM_KB - 1) {
+                    ramIterator = 0;
+                } else {
+                    ramIterator++;
+                }
             }
         }
     }
@@ -251,6 +268,7 @@ public class MMU {
      * @param remainingPages The number of pages needed to store the process
      */
     public static void paginationAlgorithm(int remainingPages) {
+
         // If the pagination algorithm has not been chosen, then ask the user to choose one
         if (paginationAlgorithm == 0) {
             Scanner scanner = new Scanner(System.in);

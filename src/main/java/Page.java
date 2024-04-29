@@ -2,7 +2,8 @@ public class Page {
     private Integer id = 1;
     private Integer physicalAddress;
     private Boolean inRealMemory = false;
-    private Integer pId;
+    private final Integer pId;
+    private boolean referenceBit = false; // SC
 
     private static Integer idCounter = 0;
 
@@ -33,6 +34,14 @@ public class Page {
 
     public Integer getPId() {
         return pId;
+    }
+
+    public boolean getReferenceBit() {
+        return referenceBit;
+    }
+
+    public void setReferenceBit(boolean referenceBit) {
+        this.referenceBit = referenceBit;
     }
 
     @Override
