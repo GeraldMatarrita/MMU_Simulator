@@ -3,16 +3,17 @@ import java.util.*;
 public class MMU {
 
     private static final Integer MAX_RAM_KB = 15; // Max space for physical memory
-    private static final Integer KB = 1000;
-    private static int remainingRAM = MAX_RAM_KB;
-    private static List<Page> virtualMemory = new ArrayList<>();
-    private static Page[] realMemory = new Page[MAX_RAM_KB];
-    private static Map<Integer, List<Page>> symbolTable = new HashMap<Integer, List<Page>>();
+    private static final Integer KB = 1000; // 1KB = 1000 bytes
+    private static int remainingRAM = MAX_RAM_KB; // Remaining space in the physical memory
+    private static List<Page> virtualMemory = new ArrayList<>(); // Virtual memory
+    private static Page[] realMemory = new Page[MAX_RAM_KB]; // Real memory  (physical memory/RAM)
+    private static Map<Integer, List<Page>> symbolTable = new HashMap<Integer, List<Page>>(); // Symbol table (Memory map)
 
-    private static Integer fragmentation = 0;
-    private static int ptrCounter = 0;
-    private static int paginationAlgorithm;
-    private static int pageFaults;
+    private static Page mruPage = null;  // Most recently used page
+    private static Integer fragmentation = 0;  // Amount of fragmentation in the memory
+    private static int ptrCounter = 0;  // Pointer counter for id
+    private static int paginationAlgorithm; // Number of the pagination algorithm chosen by the user
+    private static int pageFaults; // Number of page faults
 
     public MMU() {
         virtualMemory = new ArrayList<>();
@@ -32,13 +33,13 @@ public class MMU {
     public static int getPageFaults() {
         return pageFaults;
     }
+
     /*
      * Create a new process in the memory
      * @param pid The process ID
      * @param size The size of the process in bytes
      * @return The pointer in the real memory where the process is stored
      */
-
     public static Integer new_(Integer pid, Integer size) {
         int remainingPages = calculatePagesNeeded(size);
         if (remainingRAM >= remainingPages) {
@@ -69,6 +70,7 @@ public class MMU {
             if (realMemorySet.contains(searchedPage)) {
                 searchedPage.setReferenceBit(true);
                 System.out.println("Using page " + searchedPage.getId() + " of process " + searchedPage.getPId());
+                mruPage = searchedPage;  // Update the most recently used page
             } else {
                 pageFaults++;
                 pagesToMove.add(searchedPage);
@@ -135,8 +137,9 @@ public class MMU {
         PAGINATION ALGORITHMS
         -------------------------------------
     */
+
     /*
-     * FIFO algorithm to free memory
+     * FIFO algorithm to free memory (First In First Out)
      * @param remainingPages The number of pages needed to store the process
      */
     public static void fifo(int remainingPages) {
@@ -162,14 +165,24 @@ public class MMU {
         }
     }
 
+    /*
+     * SC algorithm to free memory (Second Chance)
+     * @param remainingPages The number of pages needed to store the process
+     */
     public static void sc(int remainingPages) {
         int iterator = 0;
+
+        // Iterate over the real memory to free the memory needed to store the new pages
         while (remainingRAM < remainingPages) {
+            // Get the page in the current position
             Page page = realMemory[iterator];
+            // If the space is occupied, then check the reference bit
             if (page != null) {
                 if (page.getReferenceBit()) {
+                    // If the reference bit is true, then set it to false
                     page.setReferenceBit(false);
                 } else {
+                    // If the reference bit is false, then move the page to the virtual memory to free the space
                     page.setPhysicalAddress(null);
                     page.setInRealMemory(false);
                     virtualMemory.add(page);
@@ -177,16 +190,65 @@ public class MMU {
                     remainingRAM++;
                 }
             }
-            iterator = (iterator + 1) % MAX_RAM_KB;
+            // Move the iterator to the next position. If it reaches the end, then start from the beginning
+            iterator++;
+            if (iterator == MAX_RAM_KB - 1) {
+                iterator = 0;
+            }
         }
     }
 
+    /*
+     * MRU algorithm to free memory (Most Recently Used)
+     * @param remainingPages The number of pages needed to store the process
+     */
     public static void mru(int remainingPages) {
-        System.out.println("MRU algorithm");
+
+        // Iterate over the real memory to find the most recently used page
+        while (remainingRAM < remainingPages) {
+            for (int i = 0; i < realMemory.length; i++) {
+                // If the page is the most recently used, then move it to the virtual memory
+                if (realMemory[i] != null && realMemory[i] == mruPage) {
+                    mruPage.setPhysicalAddress(null);
+                    mruPage.setInRealMemory(false);
+                    virtualMemory.add(mruPage);
+                    realMemory[i] = null;
+                    remainingRAM++;  // Increase the remaining RAM
+                    break;
+                }
+            }
+            // Update the most recently used page
+            for (int i = realMemory.length - 1; i >= 0; i--) {
+                if (realMemory[i] != null) {
+                    mruPage = realMemory[i];
+                    break;
+                }
+            }
+        }
     }
 
+    /*
+     * Random algorithm to free memory (Random)
+     * @param remainingPages The number of pages needed to store the process
+     */
     public static void rnd(int remainingPages) {
-        System.out.println("RND algorithm");
+        Random random = new Random();
+
+        // Iterate over the real memory to free the memory needed to store the new pages
+        while (remainingRAM < remainingPages) {
+            // Generate a random index to choose a page to move to the virtual memory
+            int randomIndex = random.nextInt(MAX_RAM_KB);
+            // Get the page in the random index
+            Page page = realMemory[randomIndex];
+            // If the space is occupied, then move the page to the virtual memory to free the space
+            if (page != null) {
+                page.setPhysicalAddress(null);
+                page.setInRealMemory(false);
+                virtualMemory.add(page);
+                realMemory[randomIndex] = null;
+                remainingRAM++;
+            }
+        }
     }
     /*
         -------------------------------------
@@ -206,7 +268,7 @@ public class MMU {
 
         // Iterate over the real memory to store the new pages in the empty spaces
         int ramIterator = 0;
-        while (remainingPages > 0){
+        while (remainingPages > 0) {
             if (realMemory[ramIterator] == null) {
                 // Create a new page and store it in the real memory
                 Page page = new Page(pid);
