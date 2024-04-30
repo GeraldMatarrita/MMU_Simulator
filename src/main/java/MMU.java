@@ -7,7 +7,7 @@ public class MMU {
     private static int remainingRAM = MAX_RAM_KB; // Remaining space in the physical memory
     private static List<Page> virtualMemory = new ArrayList<>(); // Virtual memory
     private static Page[] realMemory = new Page[MAX_RAM_KB]; // Real memory  (physical memory/RAM)
-    private static Map<Integer, List<Page>> symbolTable = new HashMap<Integer, List<Page>>(); // Symbol table (Memory map)
+    private static Map<Integer, List<Page>> symbolTable = new HashMap<>(); // Symbol table (Memory map)
 
     private static Page mruPage = null;  // Most recently used page
     private static Integer fragmentation = 0;  // Amount of fragmentation in the memory
@@ -19,7 +19,7 @@ public class MMU {
         virtualMemory = new ArrayList<>();
         realMemory = new Page[MAX_RAM_KB];
         remainingRAM = MAX_RAM_KB;
-        symbolTable = new HashMap<Integer, List<Page>>();
+        symbolTable = new HashMap<>();
     }
 
     public static List<Page> getVirtualMemory() {
@@ -301,7 +301,6 @@ public class MMU {
      */
     private static void storeOldPages(List<Page> pages, int ptr) {
         int ramIterator = 0;
-        int ramainingPages = pages.size();
 
         // Iterate over the real memory to store the pages in the empty spaces
         while (remainingRAM > 0) {
@@ -312,7 +311,6 @@ public class MMU {
                     page.setPhysicalAddress(ptr);
                     realMemory[ramIterator] = page;
                     remainingRAM--; // Decrease the remaining RAM
-                    ramainingPages--; // Decrease the remaining pages
                 }
 
                 // Move the iterator to the next position. If it reaches the end, then start from the beginning
