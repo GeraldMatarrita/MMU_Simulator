@@ -1,5 +1,5 @@
 public class Page {
-    private Integer id = 1;
+    private final Integer id;
     private Integer physicalAddress;
     private Boolean inRealMemory = false;
     private final Integer pId;
@@ -22,10 +22,6 @@ public class Page {
 
     public void setPhysicalAddress(Integer physicalAddress) {
         this.physicalAddress = physicalAddress;
-    }
-
-    public Boolean getInRealMemory() {
-        return inRealMemory;
     }
 
     public void setInRealMemory(Boolean inRealMemory) {
