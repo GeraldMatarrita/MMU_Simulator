@@ -24,6 +24,8 @@ public class Main {
         instructions.add("use(0)");
         instructions.add("use(2)");
         instructions.add("use(0)");
+        instructions.add("use(2)");
+        instructions.add("new(2,2000)");
 
         MMU.execute(instructions);
         MMU.printRealMemory();
