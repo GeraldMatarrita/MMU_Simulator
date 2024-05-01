@@ -4,22 +4,19 @@ public class MMU {
 
     private static final Integer MAX_RAM_KB = 15; // Max space for physical memory
     private static final Integer KB = 1000; // 1KB = 1000 bytes
-    private static int remainingRAM = MAX_RAM_KB; // Remaining space in the physical memory
-    private static List<Page> virtualMemory = new ArrayList<>(); // Virtual memory
-    private static Page[] realMemory = new Page[MAX_RAM_KB]; // Real memory  (physical memory/RAM)
-    private static Map<Integer, List<Page>> symbolTable = new HashMap<>(); // Symbol table (Memory map)
 
-    private static Page mruPage = null;  // Most recently used page
+    private static int remainingRAM = MAX_RAM_KB; // Remaining space in the physical memory
+    private static final List<Page> virtualMemory = new ArrayList<>(); // Virtual memory
+    private static final Page[] realMemory = new Page[MAX_RAM_KB]; // Real memory  (physical memory/RAM)
+    private static final Map<Integer, List<Page>> symbolTable = new HashMap<>(); // Symbol table (Memory map)
+
+    private static final Stack<Page> mruPageStack = new Stack<>(); // Stack to store the most recently used pages
     private static Integer fragmentation = 0;  // Amount of fragmentation in the memory
     private static int ptrCounter = 0;  // Pointer counter for id
     private static int paginationAlgorithm; // Number of the pagination algorithm chosen by the user
     private static int pageFaults; // Number of page faults
 
     public MMU() {
-        virtualMemory = new ArrayList<>();
-        realMemory = new Page[MAX_RAM_KB];
-        remainingRAM = MAX_RAM_KB;
-        symbolTable = new HashMap<>();
     }
 
     public static List<Page> getVirtualMemory() {
@@ -41,10 +38,17 @@ public class MMU {
      * @return The pointer in the real memory where the process is stored
      */
     public static Integer new_(Integer pid, Integer size) {
+        // Check if the pagination algorithm has been chosen if not, then the user must choose one
+        if (paginationAlgorithm == 0) {
+            choosePaginationAlgorithm();
+        }
+        // Calculate the number of pages needed to store the process
         int remainingPages = calculatePagesNeeded(size);
+        // Check if there is enough space in the real memory to store the process
         if (remainingRAM >= remainingPages) {
             storeNewPages(pid, remainingPages);
         } else {
+            // If there is not enough space, then free the memory using the chosen pagination algorithm
             paginationAlgorithm(remainingPages);
             storeNewPages(pid, remainingPages);
         }
@@ -62,25 +66,34 @@ public class MMU {
             throw new Exception("The pointer " + ptr + " is not in the symbol table");
         }
 
-        List<Page> ptrPages = symbolTable.get(ptr);
-        List<Page> pagesToMove = new ArrayList<>();
-        Set<Page> realMemorySet = new HashSet<>(Arrays.asList(realMemory));
+        List<Page> ptrPages = symbolTable.get(ptr); // Get the pages assigned to the pointer
+        List<Page> pagesToMove = new ArrayList<>(); // List to store the pages that need to be moved to the real memory
+        Set<Page> realMemorySet = new HashSet<>(Arrays.asList(realMemory)); // Set to store the pages in the real memory
 
+        // Iterate over the pages assigned to the pointer
         for (Page searchedPage : ptrPages) {
+            // Check if the page is in the real memory
             if (realMemorySet.contains(searchedPage)) {
-                searchedPage.setReferenceBit(true);
+                if (paginationAlgorithm == 2) { // If the pagination algorithm is SC
+                    searchedPage.setReferenceBit(true);
+                }
                 System.out.println("Using page " + searchedPage.getId() + " of process " + searchedPage.getPId());
-                mruPage = searchedPage;  // Update the most recently used page
             } else {
-                pageFaults++;
-                pagesToMove.add(searchedPage);
+                pageFaults++; // Increase the page faults
+                pagesToMove.add(searchedPage); // Add the page to the list of pages to move to the real memory
             }
         }
+
+        // Check if there are pages to move to the real memory
         if (!pagesToMove.isEmpty()) {
-            paginationAlgorithm(pagesToMove.size());
-            storeOldPages(pagesToMove, ptr);
-            virtualMemory.removeAll(pagesToMove);
+            paginationAlgorithm(pagesToMove.size()); // Free the memory using the chosen pagination algorithm
+            storeOldPages(pagesToMove, ptr); // Store the pages in the real memory
+            virtualMemory.removeAll(pagesToMove); // Remove the pages from the virtual memory
         }
+        // If the pagination algorithm is MRU
+        if (paginationAlgorithm == 3)
+            mruPageStack.addAll(ptrPages); // Add the pages to the stack of most recently used pages
+
     }
 
     /*
@@ -94,6 +107,8 @@ public class MMU {
 
             for (int i = 0; i < realMemory.length; i++) {
                 if (realMemory[i] != null && Objects.equals(realMemory[i].getPhysicalAddress(), ptr)) {
+                    if (paginationAlgorithm == 3)
+                        mruPageStack.remove(realMemory[i]); // Remove the page from the stack of most recently used pages
                     realMemory[i] = null;
                     remainingRAM++;
                 }
@@ -118,6 +133,8 @@ public class MMU {
                 if (!pointersToRemove.contains(realMemory[i].getPhysicalAddress())) {
                     pointersToRemove.add(realMemory[i].getPhysicalAddress());
                 }
+                if (paginationAlgorithm == 3)
+                    mruPageStack.remove(realMemory[i]); // Remove the page from the stack of most recently used pages
                 realMemory[i] = null;
                 remainingRAM++;
             }
@@ -206,6 +223,7 @@ public class MMU {
 
         // Iterate over the real memory to find the most recently used page
         while (remainingRAM < remainingPages) {
+            Page mruPage = mruPageStack.pop();
             for (int i = 0; i < realMemory.length; i++) {
                 // If the page is the most recently used, then move it to the virtual memory
                 if (realMemory[i] != null && realMemory[i] == mruPage) {
@@ -214,13 +232,6 @@ public class MMU {
                     virtualMemory.add(mruPage);
                     realMemory[i] = null;
                     remainingRAM++;  // Increase the remaining RAM
-                    break;
-                }
-            }
-            // Update the most recently used page
-            for (int i = realMemory.length - 1; i >= 0; i--) {
-                if (realMemory[i] != null) {
-                    mruPage = realMemory[i];
                     break;
                 }
             }
@@ -250,6 +261,34 @@ public class MMU {
             }
         }
     }
+
+    public static void optimal(int remainingPages) {
+        while (remainingRAM < remainingPages) {
+            int maxDistanceIndex = -1;
+            int maxDistance = -1;
+
+            for (int i = 0; i < realMemory.length; i++) {
+                Page page = realMemory[i];
+                if (page != null) {
+                    int distance = findDistanceToNextReference(page, i);
+                    if (distance > maxDistance) {
+                        maxDistance = distance;
+                        maxDistanceIndex = i;
+                    }
+                }
+            }
+
+            if (maxDistanceIndex != -1) {
+                Page pageToReplace = realMemory[maxDistanceIndex];
+                pageToReplace.setPhysicalAddress(null);
+                pageToReplace.setInRealMemory(false);
+                virtualMemory.add(pageToReplace);
+                realMemory[maxDistanceIndex] = null;
+                remainingRAM++;
+            }
+        }
+    }
+
     /*
         -------------------------------------
         AUXILIARY METHODS
@@ -279,6 +318,9 @@ public class MMU {
                 remainingRAM--; // Decrease the remaining RAM
                 pageFaults++; // Increase the page faults
                 remainingPages--;
+                if (paginationAlgorithm == 3) { // If the pagination algorithm is MRU
+                    mruPageStack.push(page); // Add the page to the stack of most recently used pages
+                }
             }
 
             // Move the iterator to the next position. If it reaches the end, then start from the beginning
@@ -328,7 +370,24 @@ public class MMU {
      * @param remainingPages The number of pages needed to store the process
      */
     public static void paginationAlgorithm(int remainingPages) {
+        // Execute the chosen pagination algorithm
+        switch (paginationAlgorithm) {
+            case 1:
+                fifo(remainingPages);
+                break;
+            case 2:
+                sc(remainingPages);
+                break;
+            case 3:
+                mru(remainingPages);
+                break;
+            case 4:
+                rnd(remainingPages);
+                break;
+        }
+    }
 
+    public static void choosePaginationAlgorithm() {
         // If the pagination algorithm has not been chosen, then ask the user to choose one
         if (paginationAlgorithm == 0) {
             Scanner scanner = new Scanner(System.in);
@@ -351,22 +410,15 @@ public class MMU {
                 }
             } while (paginationAlgorithm < 1 || paginationAlgorithm > 4);
         }
+    }
 
-        // Execute the chosen pagination algorithm
-        switch (paginationAlgorithm) {
-            case 1:
-                fifo(remainingPages);
-                break;
-            case 2:
-                sc(remainingPages);
-                break;
-            case 3:
-                mru(remainingPages);
-                break;
-            case 4:
-                rnd(remainingPages);
-                break;
+    private static int findDistanceToNextReference(Page page, int startIndex) {
+        for (int i = startIndex + 1; i < realMemory.length; i++) {
+            if (realMemory[i] != null && realMemory[i].equals(page)) {
+                return i - startIndex;
+            }
         }
+        return Integer.MAX_VALUE; // Return infinity if the page is not referenced in the future
     }
 
     /*
