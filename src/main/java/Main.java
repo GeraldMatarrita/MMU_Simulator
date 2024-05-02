@@ -17,16 +17,30 @@ public class Main {
 //        } catch (IOException e) {
 //            System.err.println("An error occurred while reading the file: " + e.getMessage());
 //        }
-        instructions.add("new(1,10000)");
-        instructions.add("new(2,4500)");
-        instructions.add("new(3,5000)");
+        instructions.add("new(0,10000)"); // ptr 0
+        instructions.add("new(1,4500)"); // ptr 1
+        instructions.add("new(2,5000)"); // ptr 2
         instructions.add("use(0)");
         instructions.add("use(0)");
         instructions.add("use(2)");
         instructions.add("use(0)");
         instructions.add("use(2)");
-        instructions.add("new(2,2000)");
+        instructions.add("use(1)");
+        instructions.add("delete(2)");
+        instructions.add("new(1,2000)"); // ptr 3
 
+        MMU.executeOptimal(instructions);
+        System.out.println("----------------------------------");
+        System.out.println("Optimal Algorithm");
+        System.out.println("----------------------------------");
+        MMU.printRealMemory();
+        MMU.printVirtualMemory();
+        MMU.printSymbolTable();
+        System.out.println("Page faults: " + MMU.getPageFaults());
+        MMU.clean();
+        System.out.println("----------------------------------");
+        System.out.println("Other Algorithms");
+        System.out.println("----------------------------------");
         MMU.execute(instructions);
         MMU.printRealMemory();
         MMU.printVirtualMemory();
