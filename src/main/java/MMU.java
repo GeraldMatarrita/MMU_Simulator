@@ -15,13 +15,7 @@ public class MMU {
     private static int ptrCounter = 0;  // Pointer counter for id
     private static int paginationAlgorithm; // Number of the pagination algorithm chosen by the user
     private static int pageFaults; // Number of page faults
-
-    public MMU() {
-    }
-
-    public static List<Page> getVirtualMemory() {
-        return virtualMemory;
-    }
+    private static List<String> instructions;
 
     public static Integer getFragmentation() {
         return fragmentation;
@@ -38,10 +32,6 @@ public class MMU {
      * @return The pointer in the real memory where the process is stored
      */
     public static Integer new_(Integer pid, Integer size) {
-        // Check if the pagination algorithm has been chosen if not, then the user must choose one
-        if (paginationAlgorithm == 0) {
-            choosePaginationAlgorithm();
-        }
         // Calculate the number of pages needed to store the process
         int remainingPages = calculatePagesNeeded(size);
         // Check if there is enough space in the real memory to store the process
@@ -77,7 +67,6 @@ public class MMU {
                 if (paginationAlgorithm == 2) { // If the pagination algorithm is SC
                     searchedPage.setReferenceBit(true);
                 }
-                System.out.println("Using page " + searchedPage.getId() + " of process " + searchedPage.getPId());
             } else {
                 pageFaults++; // Increase the page faults
                 pagesToMove.add(searchedPage); // Add the page to the list of pages to move to the real memory
@@ -105,12 +94,22 @@ public class MMU {
         if (symbolTable.containsKey(ptr)) {
             // Iterate over the real memory to free the memory used by the pointer
 
-            for (int i = 0; i < realMemory.length; i++) {
-                if (realMemory[i] != null && Objects.equals(realMemory[i].getPhysicalAddress(), ptr)) {
+            List<Page> pagesToRemove = symbolTable.get(ptr);
+
+            for (Page page : pagesToRemove) {
+                if (page.getInRealMemory()) {
+                    for (int i = 0; i < realMemory.length; i++) {
+                        if (realMemory[i] != null && realMemory[i] == page) {
+                            if (paginationAlgorithm == 3)
+                                mruPageStack.remove(page); // Remove the page from the stack of most recently used pages
+                            realMemory[i] = null;
+                            remainingRAM++;
+                        }
+                    }
+                } else {
                     if (paginationAlgorithm == 3)
-                        mruPageStack.remove(realMemory[i]); // Remove the page from the stack of most recently used pages
-                    realMemory[i] = null;
-                    remainingRAM++;
+                        mruPageStack.remove(page); // Remove the page from the stack of most recently used pages
+                    virtualMemory.remove(page);
                 }
             }
 
@@ -264,28 +263,31 @@ public class MMU {
 
     public static void optimal(int remainingPages) {
         while (remainingRAM < remainingPages) {
-            int maxDistanceIndex = -1;
-            int maxDistance = -1;
+            int farthestAccess = -1;
+            int pageToReplaceIndex = -1;
 
+            // Iterate over the pages in the real memory
             for (int i = 0; i < realMemory.length; i++) {
                 Page page = realMemory[i];
-                if (page != null) {
-                    int distance = findDistanceToNextReference(page, i);
-                    if (distance > maxDistance) {
-                        maxDistance = distance;
-                        maxDistanceIndex = i;
-                    }
+                if (page == null) continue;
+                int nextPageAccess = findNextPageAccess(page, instructions);
+                // If the page will not be accessed in the future or its next access is farther, update
+                if (nextPageAccess == -1 || nextPageAccess > farthestAccess) {
+                    farthestAccess = nextPageAccess;
+                    pageToReplaceIndex = i;
                 }
             }
 
-            if (maxDistanceIndex != -1) {
-                Page pageToReplace = realMemory[maxDistanceIndex];
-                pageToReplace.setPhysicalAddress(null);
-                pageToReplace.setInRealMemory(false);
-                virtualMemory.add(pageToReplace);
-                realMemory[maxDistanceIndex] = null;
-                remainingRAM++;
-            }
+            // If no pages are found in real memory, break
+            // If no pages are found in real memory, break
+            if (pageToReplaceIndex == -1) break;
+            // Remove the page from real memory and increase remaining RAM
+            Page pageToReplace = realMemory[pageToReplaceIndex];
+            pageToReplace.setPhysicalAddress(null);
+            pageToReplace.setInRealMemory(false);
+            virtualMemory.add(pageToReplace);
+            realMemory[pageToReplaceIndex] = null;
+            remainingRAM++;
         }
     }
 
@@ -384,8 +386,11 @@ public class MMU {
             case 4:
                 rnd(remainingPages);
                 break;
+            case 5:
+                optimal(remainingPages);
         }
     }
+
 
     public static void choosePaginationAlgorithm() {
         // If the pagination algorithm has not been chosen, then ask the user to choose one
@@ -412,13 +417,20 @@ public class MMU {
         }
     }
 
-    private static int findDistanceToNextReference(Page page, int startIndex) {
-        for (int i = startIndex + 1; i < realMemory.length; i++) {
-            if (realMemory[i] != null && realMemory[i].equals(page)) {
-                return i - startIndex;
+    /*
+     * Find the next access to a page in the instructions list
+     * @param page The page to find next access for
+     * @param instructions The list of instructions
+     * @return The index of next access or -1 if not found
+     */
+    private static int findNextPageAccess(Page page, List<String> instructions) {
+        for (int i = 0; i < instructions.size(); i++) {
+            String instruction = instructions.get(i);
+            if (instruction.contains("use(" + page.getPhysicalAddress() + ")")) {
+                return i;
             }
         }
-        return Integer.MAX_VALUE; // Return infinity if the page is not referenced in the future
+        return -1;
     }
 
     /*
@@ -457,6 +469,11 @@ public class MMU {
         if (instructions == null) {
             System.out.println("No instructions to execute");
             return;
+        }
+
+        // If the pagination algorithm has not been chosen, then ask the user to choose one
+        if (paginationAlgorithm == 0) {
+            choosePaginationAlgorithm();
         }
 
         // Initialize the variables to store the command, process ID, size, command, pointer
@@ -503,6 +520,21 @@ public class MMU {
         }
     }
 
+    public static void executeOptimal(List<String> userInstructions) {
+        // Check if there are instructions to execute
+        if (userInstructions == null) {
+            System.out.println("No instructions to execute");
+            return;
+        }
+
+        instructions = userInstructions;
+        paginationAlgorithm = 5;
+        execute(instructions);
+
+        instructions = null;
+        paginationAlgorithm = 0;
+    }
+
     /*
      * Print the pages in the real memory
      */
@@ -526,7 +558,6 @@ public class MMU {
      */
     public static void printVirtualMemory() {
         System.out.println("=================================");
-        List<Page> virtualMemory = MMU.getVirtualMemory();
         System.out.println("\nVirtual memory: ");
         for (Page page : virtualMemory) {
             System.out.println(page);
@@ -548,5 +579,18 @@ public class MMU {
             System.out.println();
         }
         System.out.println("=================================");
+    }
+
+    public static void clean() {
+        remainingRAM = MAX_RAM_KB;
+        virtualMemory.clear();
+        Arrays.fill(realMemory, null);
+        symbolTable.clear();
+        mruPageStack.clear();
+        fragmentation = 0;
+        ptrCounter = 0;
+        paginationAlgorithm = 0;
+        pageFaults = 0;
+        instructions = null;
     }
 }
