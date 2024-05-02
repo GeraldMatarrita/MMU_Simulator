@@ -32,6 +32,10 @@ public class Page {
         this.inRealMemory = inRealMemory;
     }
 
+    public static void setIdCounter(Integer idCounter) {
+        Page.idCounter = idCounter;
+    }
+
     public Integer getPId() {
         return pId;
     }
