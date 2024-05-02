@@ -279,7 +279,6 @@ public class MMU {
             }
 
             // If no pages are found in real memory, break
-            // If no pages are found in real memory, break
             if (pageToReplaceIndex == -1) break;
             // Remove the page from real memory and increase remaining RAM
             Page pageToReplace = realMemory[pageToReplaceIndex];
