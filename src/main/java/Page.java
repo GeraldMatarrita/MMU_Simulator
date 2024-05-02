@@ -16,6 +16,10 @@ public class Page {
         return id;
     }
 
+    public Boolean getInRealMemory() {
+        return inRealMemory;
+    }
+
     public Integer getPhysicalAddress() {
         return physicalAddress;
     }
