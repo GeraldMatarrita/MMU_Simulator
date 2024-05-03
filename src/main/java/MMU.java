@@ -451,7 +451,7 @@ public class MMU {
     }
 
     /*
-     * Choose a pagination algorithm to free memory. If the algorithm has already been chosen, then execute it.
+     * Choose a pagination algorithm to free memory. If the algorithm has already been chosen, then executeAll it.
      * @param remainingPages The number of pages needed to store the process
      */
     private void paginationAlgorithm(int remainingPages) {
@@ -549,17 +549,7 @@ public class MMU {
         return result;
     }
 
-    /*
-     * Execute the instructions in the given list
-     * @param instructions The list of instructions to execute
-     */
-    public void execute(List<String> instructions) {
-        // Check if there are instructions to execute
-        if (instructions == null) {
-            System.out.println("No instructions to execute");
-            return;
-        }
-
+    public void executeInstruction(String instruction) {
         // Ask the user to choose a pagination algorithm if it has not been chosen
         if (paginationAlgorithm == 0) {
             choosePaginationAlgorithm();
@@ -571,55 +561,73 @@ public class MMU {
         String command;
         Integer ptr = null;
 
-        // Iterate over the instructions to execute them
+        // Split the instruction to get the command and the arguments
+        String[] parts = instruction.split("\\(");
+        command = parts[0];
+        if (command.equals("new")) {
+            String[] args = parts[1].split(",");
+            pid = Integer.parseInt(args[0]);
+            size = Integer.parseInt(args[1].substring(0, args[1].length() - 1));
+        } else if (command.equals("kill")) {
+            pid = Integer.parseInt(parts[1].substring(0, parts[1].length() - 1));
+        } else {
+            ptr = Integer.parseInt(parts[1].substring(0, parts[1].length() - 1));
+        }
+        // Execute the command depending on the instruction
+        try {
+            switch (command) {
+                case "new":
+                    new_(pid, size);
+                    break;
+                case "delete":
+                    delete(ptr);
+                    break;
+                case "kill":
+                    kill(pid);
+                    break;
+                case "use":
+                    use(ptr);
+                    break;
+                default:
+                    System.out.println("Invalid command: " + command);
+            }
+        } catch (Exception e) {
+            System.err.println(e.getMessage());
+        }
+    }
+
+    /*
+     * Execute the instructions in the given list
+     * @param instructions The list of instructions to executeAll
+     */
+    public void executeAll(List<String> instructions) {
+
+        // Ask the user to choose a pagination algorithm if it has not been chosen
+        if (paginationAlgorithm == 0) {
+            choosePaginationAlgorithm();
+        }
+
+        // Check if there are instructions to executeAll
+        if (instructions == null) {
+            System.out.println("No instructions to executeAll");
+            return;
+        }
+
+        // Ask the user to choose a pagination algorithm if it has not been chosen
+        if (paginationAlgorithm == 0) {
+            choosePaginationAlgorithm();
+        }
+
+        // Iterate over the instructions to executeAll them
         for (String instruction : instructions) {
-            // Split the instruction to get the command and the arguments
-            String[] parts = instruction.split("\\(");
-            command = parts[0];
-            if (command.equals("new")) {
-                String[] args = parts[1].split(",");
-                pid = Integer.parseInt(args[0]);
-                size = Integer.parseInt(args[1].substring(0, args[1].length() - 1));
-            } else if (command.equals("kill")) {
-                pid = Integer.parseInt(parts[1].substring(0, parts[1].length() - 1));
-            } else {
-                ptr = Integer.parseInt(parts[1].substring(0, parts[1].length() - 1));
-            }
-            // Execute the command depending on the instruction
-            try {
-                switch (command) {
-                    case "new":
-                        new_(pid, size);
-                        break;
-                    case "delete":
-                        delete(ptr);
-                        break;
-                    case "kill":
-                        kill(pid);
-                        break;
-                    case "use":
-                        use(ptr);
-                        break;
-                    default:
-                        System.out.println("Invalid command: " + command);
-                }
-            } catch (Exception e) {
-                System.err.println(e.getMessage());
-            }
+            executeInstruction(instruction);
         }
         Page.setIdCounter(0); // Reset the page ID counter
     }
 
-    public void executeOptimal(List<String> userInstructions) {
-        // Check if there are instructions to execute
-        if (userInstructions == null) {
-            System.out.println("No instructions to execute");
-            return;
-        }
-
-        instructions = userInstructions;
+    public void setOptimalAlgorithm(List<String> instructions) {
         paginationAlgorithm = 5;
-        execute(instructions);
+        this.instructions = instructions;
     }
 
     /*
