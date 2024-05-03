@@ -82,7 +82,7 @@ public class Main {
         executorService.shutdown();
 
         try {
-            // Wait for both tasks to finish executing
+            // Wait for both tasks to finish executing before printing the results
             executorService.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
         } catch (InterruptedException e) {
             System.err.println("Execution was interrupted: " + e.getMessage());
