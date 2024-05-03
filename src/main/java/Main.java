@@ -1,5 +1,10 @@
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 public class Main {
     public static void main(String[] args) {
@@ -22,17 +27,68 @@ public class Main {
         instructions.add("new(0,9300)");
         instructions.add("new(1,4500)");
         instructions.add("new(2,4500)");
-        instructions.add("delete(1)");
         instructions.add("use(0)");
         instructions.add("use(0)");
         instructions.add("use(2)");
         instructions.add("use(0)");
         instructions.add("use(2)");
-//        instructions.add("use(1)");
-//        instructions.add("delete(2)");
-//        instructions.add("new(1,2000)");
-//        instructions.add("new(2,3000)");
-        mmuOptimal.executeOptimal(instructions);
+        instructions.add("delete(2)");
+        instructions.add("new(1,2000)");
+        instructions.add("new(2,3000)");
+
+        // Set the instructions for the optimal algorithm
+        mmuOptimal.setOptimalAlgorithm(instructions);
+
+        // Ask the user for the algorithm to use
+        mmuOther.choosePaginationAlgorithm();
+
+        // Create a CyclicBarrier for 2 threads
+        ExecutorService executorService = Executors.newFixedThreadPool(2);
+        CyclicBarrier barrier = new CyclicBarrier(2); // Create a CyclicBarrier for 2 threads
+
+        // Runnable task for the optimal algorithm
+        Runnable optimalTask = () -> {
+            for (String instruction : instructions) {
+                System.out.println("Executing instruction: " + instruction + " with the optimal algorithm");
+                mmuOptimal.executeInstruction(instruction);
+                Page.setIdCounter(0);
+                try {
+                    barrier.await(); // Wait for the other thread
+                } catch (Exception e) {
+                    System.err.println("An error occurred while waiting for the other thread: " + e.getMessage());
+                }
+            }
+        };
+
+        // Runnable task for the user-chosen algorithm
+        Runnable userChosenTask = () -> {
+            for (String instruction : instructions) {
+                System.out.println("Executing instruction: " + instruction + " with the other algorithm");
+                mmuOther.executeInstruction(instruction);
+                Page.setIdCounter(0);
+                try {
+                    barrier.await(); // Wait for the other thread
+                } catch (Exception e) {
+                    System.err.println("An error occurred while waiting for the other thread: " + e.getMessage());
+                }
+            }
+        };
+
+        // Execute the tasks in parallel
+        executorService.submit(optimalTask);
+        executorService.submit(userChosenTask);
+
+        // Shutdown the executor service
+        executorService.shutdown();
+
+        try {
+            // Wait for both tasks to finish executing
+            executorService.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+        } catch (InterruptedException e) {
+            System.err.println("Execution was interrupted: " + e.getMessage());
+        }
+
+//        mmuOptimal.executeAll(instructions);
         System.out.println("----------------------------------");
         System.out.println("Optimal Algorithm");
         System.out.println("----------------------------------");
@@ -44,9 +100,9 @@ public class Main {
         System.out.println("Trashing Time: " + mmuOptimal.getTrashingTime() + " seconds");
         System.out.println("Total Time: " + mmuOptimal.getTotalTime() + " seconds");
         System.out.println("----------------------------------");
-        System.out.println("Other Algorithms");
+        System.out.println("Other Algorithm");
         System.out.println("----------------------------------");
-        mmuOther.execute(instructions);
+//        mmuOther.executeAll(instructions);
         mmuOther.printRealMemory();
         mmuOther.printVirtualMemory();
         mmuOther.printSymbolTable();
