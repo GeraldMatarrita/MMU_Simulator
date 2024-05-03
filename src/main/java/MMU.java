@@ -475,7 +475,7 @@ public class MMU {
     }
 
 
-    private void choosePaginationAlgorithm() {
+    public void choosePaginationAlgorithm() {
         // If the pagination algorithm has not been chosen, then ask the user to choose one
         if (paginationAlgorithm == 0) {
             Scanner scanner = new Scanner(System.in);
