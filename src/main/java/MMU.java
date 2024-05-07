@@ -8,6 +8,7 @@ public class MMU {
     private final Map<Integer, List<Page>> symbolTable; // Symbol table (Memory map)
     private final Stack<Page> mruPageStack; // Stack to store the most recently used pages
     private List<String> instructions;
+    private int pageIDCounter;
 
     private int ptrCounter;  // Pointer counter for id
     private int paginationAlgorithm; // Number of the pagination algorithm chosen by the user
@@ -15,6 +16,7 @@ public class MMU {
     private int pageHits; // Time to access a page in memory in seconds
     private final Set<Integer> processesIds; // Set to store the ids of the processes in execution
     private final Map<Page, Integer> fragmentedPages; // Map to store the pages with fragmentation
+    private int currentIndex = 0; // Index for MRU algorithm
 
     public MMU() {
         this.remainingRAM = Computer.MAX_RAM_KB;
@@ -28,6 +30,7 @@ public class MMU {
         this.paginationAlgorithm = 0;
         this.pageFaults = 0;
         this.instructions = null;
+        this.pageIDCounter = 0;
     }
 
     public Integer getFragmentation() {
@@ -36,6 +39,10 @@ public class MMU {
 
     public int getPageFaults() {
         return pageFaults;
+    }
+
+    public int getPaginationAlgorithm() {
+        return paginationAlgorithm;
     }
 
     public int getPageHits() {
@@ -132,9 +139,11 @@ public class MMU {
                     searchedPage.setReferenceBit(true);
                 }
                 pageHits++; // Increase the page hits
+                searchedPage.setLoadedTime(Computer.PAGE_HIT_TIME);
             } else {
                 pageFaults++; // Increase the page faults
                 pagesToMove.add(searchedPage); // Add the page to the list of pages to move to the real memory
+                searchedPage.setLoadedTime(Computer.DISK_ACCESS_TIME_SECONDS);
             }
         }
 
@@ -215,9 +224,10 @@ public class MMU {
             symbolTable.remove(ptr);
         }
 
+        Map<Page, Integer> fragmentedPagesCopy = new HashMap<>(fragmentedPages);
         // Remove the fragmented pages if they belong to the process
-        fragmentedPages.forEach((page, fragmentation) -> {
-            if (Objects.equals(page.getPId(), pid))
+        fragmentedPagesCopy.forEach((page, fragmentation) -> {
+            if (page.getPId() == pid)
                 fragmentedPages.remove(page);
         });
 
@@ -304,17 +314,21 @@ public class MMU {
 
         // Iterate over the real memory to find the most recently used page
         while (remainingRAM < remainingPages) {
-            Page mruPage = mruPageStack.pop();
-            for (int i = 0; i < realMemory.length; i++) {
-                // If the page is the most recently used, then move it to the virtual memory
-                if (realMemory[i] != null && realMemory[i] == mruPage) {
-                    mruPage.setPhysicalAddress(null);
-                    mruPage.setInRealMemory(false);
-                    virtualMemory.add(mruPage);
-                    realMemory[i] = null;
-                    remainingRAM++;  // Increase the remaining RAM
-                    break;
+            try {
+                Page mruPage = mruPageStack.pop();
+                for (int i = 0; i < realMemory.length; i++) {
+                    // If the page is the most recently used, then move it to the virtual memory
+                    if (realMemory[i] != null && realMemory[i] == mruPage) {
+                        mruPage.setPhysicalAddress(null);
+                        mruPage.setInRealMemory(false);
+                        virtualMemory.add(mruPage);
+                        realMemory[i] = null;
+                        remainingRAM++;  // Increase the remaining RAM
+                        break;
+                    }
                 }
+            } catch (EmptyStackException e) {
+                rnd(remainingPages);
             }
         }
     }
@@ -353,8 +367,15 @@ public class MMU {
                 Page page = realMemory[i];
                 if (page == null) continue;
                 int nextPageAccess = findNextPageAccess(page, instructions);
+
                 // If the page will not be accessed in the future or its next access is farther, update
-                if (nextPageAccess == -1 || nextPageAccess > farthestAccess) {
+                if (nextPageAccess == -1){
+                    pageToReplaceIndex = i;
+                    break;
+                }
+
+                // If the page will be accessed in the future and its next access is farther, update
+                if (nextPageAccess > farthestAccess){
                     farthestAccess = nextPageAccess;
                     pageToReplaceIndex = i;
                 }
@@ -393,7 +414,7 @@ public class MMU {
         while (remainingPages > 0) {
             if (realMemory[ramIterator] == null) {
                 // Create a new page and store it in the real memory
-                Page page = new Page(pid);
+                Page page = new Page(pid, pageIDCounter++);
                 if (remainingPages == 1) {
                     fragmentedPages.put(page, fragmentation);
                 }
@@ -507,12 +528,18 @@ public class MMU {
      * @return The index of next access or -1 if not found
      */
     private int findNextPageAccess(Page page, List<String> instructions) {
-        for (int i = 0; i < instructions.size(); i++) {
+        for (int i = currentIndex ; i < instructions.size(); i++) {
             String instruction = instructions.get(i);
-            if (instruction.contains("use(" + page.getPhysicalAddress() + ")")) {
-                return i;
+            // Verificamos si la instrucción contiene una referencia a alguna página
+            if (instruction.contains("use(")) {
+                // Si se encuentra una referencia, verificamos si la página actual está en ella
+                if (instruction.contains("(" + page.getPhysicalAddress() + ")")) {
+                    // Si se encuentra una referencia a la página actual, devolvemos el índice
+                    return i;
+                }
             }
         }
+        // Si no se encuentra ninguna referencia a la página actual, devolvemos -1
         return -1;
     }
 
@@ -550,6 +577,7 @@ public class MMU {
     }
 
     public void executeInstruction(String instruction) {
+
         // Ask the user to choose a pagination algorithm if it has not been chosen
         if (paginationAlgorithm == 0) {
             choosePaginationAlgorithm();
@@ -577,7 +605,8 @@ public class MMU {
         try {
             switch (command) {
                 case "new":
-                    new_(pid, size);
+                    int createdPtr = new_(pid, size);
+//                    System.out.println("Ptr: " + createdPtr + " created for process " + pid);
                     break;
                 case "delete":
                     delete(ptr);
@@ -592,8 +621,9 @@ public class MMU {
                     System.out.println("Invalid command: " + command);
             }
         } catch (Exception e) {
-            System.err.println(e.getMessage());
+            System.err.println("An error occurred while executing the instruction: " + e.getMessage());
         }
+        currentIndex++;
     }
 
     /*
@@ -622,7 +652,6 @@ public class MMU {
         for (String instruction : instructions) {
             executeInstruction(instruction);
         }
-        Page.setIdCounter(0); // Reset the page ID counter
     }
 
     public void setOptimalAlgorithm(List<String> instructions) {

@@ -1,18 +1,18 @@
 public class Page {
-    private final Integer id;
+    private final int id;
     private Integer physicalAddress;
     private Boolean inRealMemory = false;
-    private final Integer pId;
+    private final int pId;
     private boolean referenceBit = false; // SC
+    private int loadedTime; // LRU
 
-    private static Integer idCounter = 0;
-
-    public Page(Integer pId) {
-        this.id = idCounter++;
+    public Page(Integer pId, Integer id) {
+        this.id = id;
         this.pId = pId;
+        this.loadedTime = 0;
     }
 
-    public Integer getId() {
+    public int getId() {
         return id;
     }
 
@@ -24,6 +24,10 @@ public class Page {
         return physicalAddress;
     }
 
+    public int getLoadedTime() {
+        return loadedTime;
+    }
+
     public void setPhysicalAddress(Integer physicalAddress) {
         this.physicalAddress = physicalAddress;
     }
@@ -32,11 +36,11 @@ public class Page {
         this.inRealMemory = inRealMemory;
     }
 
-    public static void setIdCounter(Integer idCounter) {
-        Page.idCounter = idCounter;
+    public void setLoadedTime(int loadedTime) {
+        this.loadedTime += loadedTime;
     }
 
-    public Integer getPId() {
+    public int getPId() {
         return pId;
     }
 

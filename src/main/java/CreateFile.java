@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.Scanner;
 import java.util.stream.IntStream;
 
 public class CreateFile {
@@ -11,22 +12,25 @@ public class CreateFile {
     private static class IdRecord {
         int id;
         boolean isDeleted;
+        boolean isKilled;
 
         IdRecord(int id) {
             this.id = id;
             this.isDeleted = false;
+            this.isKilled = false;
         }
 
         @Override
         public String toString() {
-            return "[" + id + isDeleted +
+            return "[" + id + isDeleted + isKilled +
                     ']';
         }
     }
 
-    private static final int CANTIDAD_INSTRUCCIONES = 10;
+    private static int CANTIDAD_PROCESOS = 50;
+    private static int CANTIDAD_OPERACIONES = 1000;
     private static final double PORCENTAJE_KILL = 0.05;
-    private static final double PORCENTAJE_DELETE = 0.20;
+    private static final double PORCENTAJE_DELETE = 0.15;
     private static final double PORCENTAJE_USE = 0.30;
     private static final int MIN_SIZE = 1000;
     private static final int MAX_SIZE = 5000;
@@ -40,19 +44,22 @@ public class CreateFile {
             int killCount = 0;
             int deleteCount = 0;
             int useCount = 0;
-            int instructionCount = CANTIDAD_INSTRUCCIONES;
+
+//            pedirDatos();
+
+            int instructionCount = CANTIDAD_OPERACIONES;
 
             for (int i = 0; i < instructionCount; i++) {
 
                 double chance = random.nextDouble();
                 String instruction;
 
-                if (i >= 2) { // Realizar operaciones kill y delete después de las primeras n iteraciones
-                    if (chance < PORCENTAJE_KILL && killCount < instructionCount * PORCENTAJE_KILL) {
-                        int idToKill = getRandomId();
+                if (i >= 5 ) { // Realizar operaciones kill y delete después de las primeras n iteraciones
+                    if (chance < PORCENTAJE_KILL && killCount < CANTIDAD_PROCESOS) {
+                        int idToKill = getRandomIdToKill();
                         if (idToKill != -1) {
                             instruction = "kill(" + idToKill + ")";
-                            markAsDeleted(idToKill); // Marca el ID seleccionado como eliminado
+                            markAsKilled(idToKill); // Marca el ID seleccionado como eliminado
                             killCount++;
                         } else {
                             instruction = generateNewInstruction();
@@ -94,8 +101,9 @@ public class CreateFile {
     private static String generateNewInstruction() {
         double chance = random.nextDouble();
         int id;
-        if (chance < 0.7) {
-            id = idCounter++; // Incrementar el contador de IDs si es menor que 0.7
+        if (chance < 0.7 && CANTIDAD_PROCESOS > 0) {
+            id = idCounter++; // Incrementar el contador de IDs si con una proba de 0.7
+            CANTIDAD_PROCESOS--;
         } else {
             id = Math.abs(getRandomReuseId()); // Reutilizar un ID existente si la probabilidad lo indica
         }
@@ -104,24 +112,26 @@ public class CreateFile {
         return "new(" + id + "," + size + ")";
     }
 
-    private static int getRandomId() {
+    private static int getRandomIdToKill() {
         List<Integer> validIds = idList.stream()
-                .filter(idRecord -> !idRecord.isDeleted)
+                .filter(idRecord -> !idRecord.isKilled)
                 .map(idRecord -> idRecord.id)
                 .toList();
         return validIds.isEmpty() ? -1 : validIds.get(random.nextInt(validIds.size()));
     }
 
-    private static void markAsDeleted(int id) {
+    private static void markAsKilled(int id) {
         idList.stream()
                 .filter(idRecord -> idRecord.id == id)
-                .findAny()
-                .ifPresent(idRecord -> idRecord.isDeleted = true);
+                .forEach(idRecord -> {
+                    idRecord.isKilled = true;
+                    idRecord.isDeleted = true;
+                });
     }
 
     private static int getRandomIndice() {
         List<Integer> validIndices = IntStream.range(0, idList.size())
-                .filter(i -> !idList.get(i).isDeleted)
+                .filter(i -> !idList.get(i).isDeleted && !idList.get(i).isKilled)
                 .boxed()
                 .toList();
         return validIndices.isEmpty() ? -1 : validIndices.get(random.nextInt(validIndices.size()));
@@ -129,9 +139,79 @@ public class CreateFile {
 
     private static int getRandomReuseId() {
         List<Integer> validIds = idList.stream()
-                .filter(idRecord -> !idRecord.isDeleted)
+                .filter(idRecord -> !idRecord.isKilled)
                 .map(idRecord -> idRecord.id)
                 .toList();
         return validIds.isEmpty() ? -1 : validIds.get(random.nextInt(validIds.size()));
+    }
+
+    static void pedirDatos() {
+        Scanner scanner = new Scanner(System.in);
+
+        // Pedir el número de instrucciones
+        System.out.println("Por favor, elige el número de instrucciones:");
+        System.out.println("1. 500");
+        System.out.println("2. 1000");
+        System.out.println("3. 5000");
+        System.out.println("4. Otro");
+        int opcionInstrucciones = scanner.nextInt();
+
+        switch (opcionInstrucciones) {
+            case 1:
+                CANTIDAD_OPERACIONES = 500;
+                break;
+            case 2:
+                CANTIDAD_OPERACIONES = 1000;
+                break;
+            case 3:
+                CANTIDAD_OPERACIONES = 5000;
+                break;
+            case 4:
+                System.out.println("Introduce el número de instrucciones (mayor a 10):");
+                int customInstrucciones = scanner.nextInt();
+                while (customInstrucciones <= 10) {
+                    System.out.println("El número de instrucciones debe ser mayor a 10. Inténtalo de nuevo:");
+                    customInstrucciones = scanner.nextInt();
+                }
+                CANTIDAD_OPERACIONES = customInstrucciones;
+                break;
+            default:
+                System.out.println("Opción no válida. Se seleccionará 500 como valor predeterminado.");
+                CANTIDAD_OPERACIONES = 500;
+        }
+
+        // Pedir el número de procesos
+        System.out.println("Ahora, elige el número de procesos:");
+        System.out.println("1. 10");
+        System.out.println("2. 50");
+        System.out.println("3. 100");
+        System.out.println("4. Otro");
+        int opcionProcesos = scanner.nextInt();
+
+        switch (opcionProcesos) {
+            case 1:
+                CANTIDAD_PROCESOS = 10;
+                break;
+            case 2:
+                CANTIDAD_PROCESOS = 50;
+                break;
+            case 3:
+                CANTIDAD_PROCESOS = 100;
+                break;
+            case 4:
+                System.out.println("Introduce el número de procesos (mayor a 10):");
+                int customProcesos = scanner.nextInt();
+                while (customProcesos <= 10) {
+                    System.out.println("El número de procesos debe ser mayor a 10. Inténtalo de nuevo:");
+                    customProcesos = scanner.nextInt();
+                }
+                CANTIDAD_PROCESOS = customProcesos;
+                break;
+            default:
+                System.out.println("Opción no válida. Se seleccionará 10 como valor predeterminado.");
+                CANTIDAD_PROCESOS = 10;
+        }
+
+        scanner.close();
     }
 }
