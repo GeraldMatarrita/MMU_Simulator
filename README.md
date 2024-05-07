@@ -1,1 +1,1 @@
-Simulador de MMU
+Simulador de com.example.prueba.MMU

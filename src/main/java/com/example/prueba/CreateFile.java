@@ -1,3 +1,5 @@
+package com.example.prueba;
+
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -28,24 +30,27 @@ public class CreateFile {
     }
 
     private static int CANTIDAD_PROCESOS = 50;
-    private static int CANTIDAD_OPERACIONES = 1000;
+    private static int CANTIDAD_OPERACIONES = 10;
     private static final double PORCENTAJE_KILL = 0.05;
     private static final double PORCENTAJE_DELETE = 0.15;
     private static final double PORCENTAJE_USE = 0.30;
     private static final int MIN_SIZE = 1000;
     private static final int MAX_SIZE = 5000;
-    private static final Random random = new Random();
+    private static Random random = new Random();
     private static final List<IdRecord> idList = new ArrayList<>();
     private static final String FILENAME = "instructions.txt";
     private static int idCounter = 0;
 
-    public static void writeInstructionsToFile() throws IOException {
+    public static void writeInstructionsToFile(int instrucciones, int procesos, int seed) throws IOException {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(FILENAME))) {
             int killCount = 0;
             int deleteCount = 0;
             int useCount = 0;
 
 //            pedirDatos();
+            CANTIDAD_OPERACIONES = instrucciones;
+            CANTIDAD_PROCESOS = procesos;
+            random = new Random(seed);
 
             int instructionCount = CANTIDAD_OPERACIONES;
 
@@ -129,9 +134,10 @@ public class CreateFile {
                 });
     }
 
+
     private static int getRandomIndice() {
         List<Integer> validIndices = IntStream.range(0, idList.size())
-                .filter(i -> !idList.get(i).isDeleted && !idList.get(i).isKilled)
+                .filter(i -> !idList.get(i).isDeleted &&!idList.get(i).isKilled)
                 .boxed()
                 .toList();
         return validIndices.isEmpty() ? -1 : validIndices.get(random.nextInt(validIndices.size()));

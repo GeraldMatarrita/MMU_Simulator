@@ -1,3 +1,5 @@
+package com.example.prueba;
+
 import java.util.*;
 
 public class MMU {
@@ -8,15 +10,14 @@ public class MMU {
     private final Map<Integer, List<Page>> symbolTable; // Symbol table (Memory map)
     private final Stack<Page> mruPageStack; // Stack to store the most recently used pages
     private List<String> instructions;
-    private int pageIDCounter;
-
+    private int pageIdCounter;
+    private int currentIndex = 0; // Index for MRU algorithm
     private int ptrCounter;  // Pointer counter for id
     private int paginationAlgorithm; // Number of the pagination algorithm chosen by the user
     private int pageFaults; // Number of page faults
     private int pageHits; // Time to access a page in memory in seconds
     private final Set<Integer> processesIds; // Set to store the ids of the processes in execution
     private final Map<Page, Integer> fragmentedPages; // Map to store the pages with fragmentation
-    private int currentIndex = 0; // Index for MRU algorithm
 
     public MMU() {
         this.remainingRAM = Computer.MAX_RAM_KB;
@@ -30,7 +31,7 @@ public class MMU {
         this.paginationAlgorithm = 0;
         this.pageFaults = 0;
         this.instructions = null;
-        this.pageIDCounter = 0;
+        this.pageIdCounter = 0;
     }
 
     public Integer getFragmentation() {
@@ -39,10 +40,6 @@ public class MMU {
 
     public int getPageFaults() {
         return pageFaults;
-    }
-
-    public int getPaginationAlgorithm() {
-        return paginationAlgorithm;
     }
 
     public int getPageHits() {
@@ -85,6 +82,23 @@ public class MMU {
         return (getTrashingTime() * 100) / getTotalTime();
     }
 
+    public List<Page> getRealMemory() {
+        return Arrays.asList(realMemory);
+    }
+
+    public List<Page> getVirtualMemory() {
+        return new ArrayList<>(virtualMemory);
+    }
+
+    public void setOptimalAlgorithm(List<String> instructions) {
+        paginationAlgorithm = 5;
+        this.instructions = instructions;
+    }
+
+    public void setPaginationAlgorithm(int paginationAlgorithm) {
+        this.paginationAlgorithm = paginationAlgorithm;
+    }
+
     /*
      * Create a new process in the memory
      * @param pid The process ID
@@ -122,7 +136,7 @@ public class MMU {
      * @param ptr The pointer to the memory assigned to the process
      * @throws NotInRealMemoryException If the pointer is not in the real memory
      */
-    private void use(Integer ptr) throws Exception {
+    private void use(int ptr) throws Exception {
         if (!symbolTable.containsKey(ptr)) {
             throw new Exception("The pointer " + ptr + " is not in the symbol table");
         }
@@ -163,7 +177,7 @@ public class MMU {
      * Delete all the pages in the real memory that belong to the given pointer
      * @param ptr The pointer to the memory assigned to the process
      */
-    private void delete(Integer ptr) throws Exception {
+    private void delete(int ptr) throws Exception {
         // Check if the pointer is in the symbol table
         if (!symbolTable.containsKey(ptr)) {
             throw new Exception("The pointer " + ptr + " is not in the symbol table");
@@ -224,8 +238,8 @@ public class MMU {
             symbolTable.remove(ptr);
         }
 
-        Map<Page, Integer> fragmentedPagesCopy = new HashMap<>(fragmentedPages);
         // Remove the fragmented pages if they belong to the process
+        Map<Page, Integer> fragmentedPagesCopy = new HashMap<>(fragmentedPages);
         fragmentedPagesCopy.forEach((page, fragmentation) -> {
             if (page.getPId() == pid)
                 fragmentedPages.remove(page);
@@ -327,7 +341,8 @@ public class MMU {
                         break;
                     }
                 }
-            } catch (EmptyStackException e) {
+            }
+            catch (EmptyStackException e){
                 rnd(remainingPages);
             }
         }
@@ -357,6 +372,10 @@ public class MMU {
         }
     }
 
+    /*
+     * Optimal algorithm to free memory
+     * @param remainingPages The number of pages needed to store the process
+     */
     private void optimal(int remainingPages) {
         while (remainingRAM < remainingPages) {
             int farthestAccess = -1;
@@ -414,7 +433,7 @@ public class MMU {
         while (remainingPages > 0) {
             if (realMemory[ramIterator] == null) {
                 // Create a new page and store it in the real memory
-                Page page = new Page(pid, pageIDCounter++);
+                Page page = new Page(pid, pageIdCounter++);
                 if (remainingPages == 1) {
                     fragmentedPages.put(page, fragmentation);
                 }
@@ -475,7 +494,7 @@ public class MMU {
      * Choose a pagination algorithm to free memory. If the algorithm has already been chosen, then executeAll it.
      * @param remainingPages The number of pages needed to store the process
      */
-    private void paginationAlgorithm(int remainingPages) {
+    public void paginationAlgorithm(int remainingPages) {
         // Execute the chosen pagination algorithm
         switch (paginationAlgorithm) {
             case 1:
@@ -492,10 +511,13 @@ public class MMU {
                 break;
             case 5:
                 optimal(remainingPages);
+                break;
         }
     }
 
-
+    /*
+     * Choose a pagination algorithm to execute
+     */
     public void choosePaginationAlgorithm() {
         // If the pagination algorithm has not been chosen, then ask the user to choose one
         if (paginationAlgorithm == 0) {
@@ -528,18 +550,12 @@ public class MMU {
      * @return The index of next access or -1 if not found
      */
     private int findNextPageAccess(Page page, List<String> instructions) {
-        for (int i = currentIndex ; i < instructions.size(); i++) {
+        for (int i = currentIndex; i < instructions.size(); i++) {
             String instruction = instructions.get(i);
-            // Verificamos si la instrucción contiene una referencia a alguna página
-            if (instruction.contains("use(")) {
-                // Si se encuentra una referencia, verificamos si la página actual está en ella
-                if (instruction.contains("(" + page.getPhysicalAddress() + ")")) {
-                    // Si se encuentra una referencia a la página actual, devolvemos el índice
-                    return i;
-                }
+            if (instruction.contains("use(" + page.getPhysicalAddress() + ")")) {
+                return i;
             }
         }
-        // Si no se encuentra ninguna referencia a la página actual, devolvemos -1
         return -1;
     }
 
@@ -548,10 +564,11 @@ public class MMU {
      * @param size The size of the process in bytes
      * @return The number of pages needed to store the process
      */
-
     private int calculateFragmentation(int size){
+        // If the size is greater than 1KB, then calculate the fragmentation
         if (size % Computer.KB != 0) {
             return Computer.KB - size % Computer.KB;
+            // If the size is less than 1KB, the fragmentation is the difference between 1KB and the size
         } else if (size < Computer.KB) {
             return Computer.KB - size;
         } else {
@@ -559,6 +576,11 @@ public class MMU {
         }
     }
 
+    /*
+     * Calculate the number of pages needed to store the pointer
+     * @param size The size of the pointer in bytes
+     * @return The number of pages needed to store the pointer
+     */
     private int calculatePagesNeeded(Integer size) {
         int result;
         // Check if the size is greater than 1KB
@@ -576,8 +598,11 @@ public class MMU {
         return result;
     }
 
+    /*
+     * Execute the given instruction
+     * @param instruction The instruction to executeAll
+     */
     public void executeInstruction(String instruction) {
-
         // Ask the user to choose a pagination algorithm if it has not been chosen
         if (paginationAlgorithm == 0) {
             choosePaginationAlgorithm();
@@ -605,8 +630,7 @@ public class MMU {
         try {
             switch (command) {
                 case "new":
-                    int createdPtr = new_(pid, size);
-//                    System.out.println("Ptr: " + createdPtr + " created for process " + pid);
+                    new_(pid, size);
                     break;
                 case "delete":
                     delete(ptr);
@@ -621,7 +645,7 @@ public class MMU {
                     System.out.println("Invalid command: " + command);
             }
         } catch (Exception e) {
-            System.err.println("An error occurred while executing the instruction: " + e.getMessage());
+            System.err.println(e.getMessage());
         }
         currentIndex++;
     }
@@ -654,10 +678,6 @@ public class MMU {
         }
     }
 
-    public void setOptimalAlgorithm(List<String> instructions) {
-        paginationAlgorithm = 5;
-        this.instructions = instructions;
-    }
 
     /*
      * Print the pages in the real memory
@@ -703,5 +723,66 @@ public class MMU {
             System.out.println();
         }
         System.out.println("=================================");
+    }
+
+    /*
+     * Reset the memory management unit
+     */
+    public void reset() {
+        this.remainingRAM = Computer.MAX_RAM_KB;
+        this.virtualMemory.clear();
+        Arrays.fill(realMemory, null);
+        this.symbolTable.clear();
+        this.mruPageStack.clear();
+        this.processesIds.clear();
+        this.fragmentedPages.clear();
+        this.ptrCounter = 0;
+        this.pageFaults = 0;
+        this.pageHits = 0;
+        this.currentIndex = 0;
+    }
+
+    /*
+     * Get the pages details to display in a JavaFX TableView
+     * @return The list of PageDetails objects
+     */
+    public List<PageDetails> getPagesDetails() {
+        List<PageDetails> detailsList = new ArrayList<>();
+
+        // Procesar la memoria real
+        for (Page page : realMemory) {
+            if (page != null) { // Asegúrate de que la página no esté vacía
+                PageDetails details = createPageDetailsFromPage(page, true);
+                detailsList.add(details);
+            }
+        }
+
+        // Procesar una copia de la memoria virtual para evitar ConcurrentModificationException
+        List<Page> virtualMemoryCopy = new ArrayList<>(virtualMemory);
+        for (Page page : virtualMemoryCopy) {
+            PageDetails details = createPageDetailsFromPage(page, false);
+            detailsList.add(details);
+        }
+
+        return detailsList;
+    }
+
+    /*
+        * Create a PageDetails object from a Page for JavaFX TableView
+        * @param page The page to create the PageDetails object
+        * @param inRealMemory A boolean to indicate if the page is in the real memory
+     */
+    private PageDetails createPageDetailsFromPage(Page page, boolean inRealMemory) {
+
+        String loaded = inRealMemory ? "Yes" : "No";
+        String pageId = String.valueOf(page.getId());
+        String pid = String.valueOf(page.getPId());
+        String lAddr = "";
+        String mAddr = inRealMemory ? String.valueOf(page.getPhysicalAddress()) : "N/A";
+        String dAddr = inRealMemory ? "N/A" : String.valueOf(page.getPhysicalAddress()); // Si está en virtual, asigna la dirección física
+        String loadedT = String.valueOf(page.getLoadedTime());
+        String mark = page.getReferenceBit() ? "1" : "0";
+
+        return new PageDetails(pageId, pid, loaded, lAddr, mAddr, dAddr, loadedT, mark);
     }
 }

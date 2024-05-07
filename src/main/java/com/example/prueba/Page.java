@@ -1,15 +1,16 @@
+package com.example.prueba;
+
 public class Page {
     private final int id;
     private Integer physicalAddress;
     private Boolean inRealMemory = false;
     private final int pId;
-    private boolean referenceBit = false; // SC
-    private int loadedTime; // LRU
+    private boolean referenceBit = true; // SC
+    private int loadedTime;
 
-    public Page(Integer pId, Integer id) {
-        this.id = id;
+    public Page(Integer pId, Integer pageID) {
+        this.id = pageID;
         this.pId = pId;
-        this.loadedTime = 0;
     }
 
     public int getId() {
@@ -24,20 +25,12 @@ public class Page {
         return physicalAddress;
     }
 
-    public int getLoadedTime() {
-        return loadedTime;
-    }
-
     public void setPhysicalAddress(Integer physicalAddress) {
         this.physicalAddress = physicalAddress;
     }
 
     public void setInRealMemory(Boolean inRealMemory) {
         this.inRealMemory = inRealMemory;
-    }
-
-    public void setLoadedTime(int loadedTime) {
-        this.loadedTime += loadedTime;
     }
 
     public int getPId() {
@@ -52,9 +45,17 @@ public class Page {
         this.referenceBit = referenceBit;
     }
 
+    public int getLoadedTime() {
+        return loadedTime;
+    }
+
+    public void setLoadedTime(int loadedTime) {
+        this.loadedTime += loadedTime;
+    }
+
     @Override
     public String toString() {
-        return "Page{" +
+        return "com.example.prueba.Page{" +
                 "id=" + id +
                 ", physicalAddress=" + physicalAddress +
                 ", inRealMemory=" + inRealMemory +

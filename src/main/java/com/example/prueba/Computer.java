@@ -1,3 +1,5 @@
+package com.example.prueba;
+
 public class Computer {
 
     public static final Integer CORES = 1;
