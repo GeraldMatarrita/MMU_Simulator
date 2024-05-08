@@ -31,7 +31,7 @@ public class CreateFile {
 
     private static int CANTIDAD_PROCESOS = 50;
     private static int CANTIDAD_OPERACIONES = 10;
-    private static final double PORCENTAJE_KILL = 0.05;
+    private static final double PORCENTAJE_KILL = 0.10;
     private static final double PORCENTAJE_DELETE = 0.15;
     private static final double PORCENTAJE_USE = 0.30;
     private static final int MIN_SIZE = 1000;

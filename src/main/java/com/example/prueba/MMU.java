@@ -441,7 +441,6 @@ public class MMU {
                 page.setInRealMemory(true);
                 page.setPhysicalAddress(ptrCounter);
                 page.setIndexOnMemory(ramIterator);
-                page.setIndexOnMemory(ramIterator);
 
                 realMemory[ramIterator] = page;
                 pages.add(page); // Add the page to the list of pages to store in the symbol table
@@ -745,6 +744,9 @@ public class MMU {
         this.pageFaults = 0;
         this.pageHits = 0;
         this.currentIndex = 0;
+        this.pageIdCounter = 0;
+        this.remainingRAM = Computer.MAX_RAM_PAGES;
+        this.instructions = null;
     }
 
     /*
