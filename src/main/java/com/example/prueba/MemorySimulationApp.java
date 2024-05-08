@@ -340,16 +340,13 @@ public class MemorySimulationApp extends Application {
         TableColumn<PageDetails, String> mAddrColumn = new TableColumn<>("M-ADDR");
         mAddrColumn.setCellValueFactory(new PropertyValueFactory<>("mAddr"));
 
-        TableColumn<PageDetails, String> dAddrColumn = new TableColumn<>("D-ADDR");
-        dAddrColumn.setCellValueFactory(new PropertyValueFactory<>("dAddr"));
-
         TableColumn<PageDetails, String> loadedTColumn = new TableColumn<>("Loaded-T");
         loadedTColumn.setCellValueFactory(new PropertyValueFactory<>("loadedT"));
 
         TableColumn<PageDetails, String> MARKColumn = new TableColumn<>("MARK");
         MARKColumn.setCellValueFactory(new PropertyValueFactory<>("mark"));
 
-        memoryDetailsTable.getColumns().addAll(pageIdColumn, pidColumn, loadedColumn, lAddrColumn, mAddrColumn, dAddrColumn, loadedTColumn, MARKColumn);
+        memoryDetailsTable.getColumns().addAll(pageIdColumn, pidColumn, loadedColumn, lAddrColumn, mAddrColumn, loadedTColumn, MARKColumn);
     }
 
     private void updateMemoryDetailsTable(List<PageDetails> pages, TableView<PageDetails> memoryDetailsTable) {

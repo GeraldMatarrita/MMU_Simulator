@@ -20,9 +20,9 @@ public class MMU {
     private final Map<Page, Integer> fragmentedPages; // Map to store the pages with fragmentation
 
     public MMU() {
-        this.remainingRAM = Computer.MAX_RAM_KB;
+        this.remainingRAM = Computer.MAX_RAM_PAGES;
         this.virtualMemory = new ArrayList<>();
-        this.realMemory = new Page[Computer.MAX_RAM_KB];
+        this.realMemory = new Page[Computer.MAX_RAM_PAGES];
         this.symbolTable = new HashMap<>();
         this.mruPageStack = new Stack<>();
         this.processesIds = new HashSet<>();
@@ -63,11 +63,11 @@ public class MMU {
     }
 
     public int getUsedRam() {
-        return Computer.PAGE_SIZE_KB * (Computer.MAX_RAM_KB - remainingRAM) ;
+        return Computer.PAGE_SIZE_KB * (Computer.MAX_RAM_PAGES - remainingRAM) ;
     }
 
     public int getUsedRamPercentage() {
-        return (getUsedRam() * 100) / (Computer.PAGE_SIZE_KB * Computer.MAX_RAM_KB);
+        return (getUsedRam() * 100) / (Computer.PAGE_SIZE_KB * Computer.MAX_RAM_PAGES);
     }
 
     public int getUsedVM() {
@@ -75,7 +75,7 @@ public class MMU {
     }
 
     public int getUsedVMPercentage() {
-        return (getUsedVM() * 100) / (Computer.PAGE_SIZE_KB * Computer.MAX_RAM_KB);
+        return (getUsedVM() * 100) / (Computer.PAGE_SIZE_KB * Computer.MAX_RAM_PAGES);
     }
 
     public int getPercentageOfTrashingTime() {
@@ -84,10 +84,6 @@ public class MMU {
 
     public List<Page> getRealMemory() {
         return Arrays.asList(realMemory);
-    }
-
-    public List<Page> getVirtualMemory() {
-        return new ArrayList<>(virtualMemory);
     }
 
     public void setOptimalAlgorithm(List<String> instructions) {
@@ -274,6 +270,7 @@ public class MMU {
                 Page pageToMove = realMemory[iterator];
                 pageToMove.setPhysicalAddress(null);
                 pageToMove.setInRealMemory(false);
+                pageToMove.setIndexOnMemory(-1);
                 virtualMemory.add(pageToMove);
                 realMemory[iterator] = null; // Free the space in the real memory
                 remainingRAM++; // Increase the remaining RAM
@@ -281,7 +278,7 @@ public class MMU {
 
             // Move the iterator to the next position. If it reaches the end, then start from the beginning
             iterator++;
-            if (iterator == Computer.MAX_RAM_KB) {
+            if (iterator == Computer.MAX_RAM_PAGES) {
                 iterator = 0;
             }
         }
@@ -307,6 +304,7 @@ public class MMU {
                     // If the reference bit is false, then move the page to the virtual memory to free the space
                     page.setPhysicalAddress(null);
                     page.setInRealMemory(false);
+                    page.setIndexOnMemory(-1);
                     virtualMemory.add(page);
                     realMemory[iterator] = null;
                     remainingRAM++;
@@ -314,7 +312,7 @@ public class MMU {
             }
             // Move the iterator to the next position. If it reaches the end, then start from the beginning
             iterator++;
-            if (iterator == Computer.MAX_RAM_KB) {
+            if (iterator == Computer.MAX_RAM_PAGES) {
                 iterator = 0;
             }
         }
@@ -335,6 +333,7 @@ public class MMU {
                     if (realMemory[i] != null && realMemory[i] == mruPage) {
                         mruPage.setPhysicalAddress(null);
                         mruPage.setInRealMemory(false);
+                        mruPage.setIndexOnMemory(-1);
                         virtualMemory.add(mruPage);
                         realMemory[i] = null;
                         remainingRAM++;  // Increase the remaining RAM
@@ -358,13 +357,14 @@ public class MMU {
         // Iterate over the real memory to free the memory needed to store the new pages
         while (remainingRAM < remainingPages) {
             // Generate a random index to choose a page to move to the virtual memory
-            int randomIndex = random.nextInt(Computer.MAX_RAM_KB);
+            int randomIndex = random.nextInt(Computer.MAX_RAM_PAGES);
             // Get the page in the random index
             Page page = realMemory[randomIndex];
             // If the space is occupied, then move the page to the virtual memory to free the space
             if (page != null) {
                 page.setPhysicalAddress(null);
                 page.setInRealMemory(false);
+                page.setIndexOnMemory(-1);
                 virtualMemory.add(page);
                 realMemory[randomIndex] = null;
                 remainingRAM++;
@@ -405,6 +405,7 @@ public class MMU {
             // Remove the page from real memory and increase remaining RAM
             Page pageToReplace = realMemory[pageToReplaceIndex];
             pageToReplace.setPhysicalAddress(null);
+            pageToReplace.setIndexOnMemory(-1);
             pageToReplace.setInRealMemory(false);
             virtualMemory.add(pageToReplace);
             realMemory[pageToReplaceIndex] = null;
@@ -439,6 +440,9 @@ public class MMU {
                 }
                 page.setInRealMemory(true);
                 page.setPhysicalAddress(ptrCounter);
+                page.setIndexOnMemory(ramIterator);
+                page.setIndexOnMemory(ramIterator);
+
                 realMemory[ramIterator] = page;
                 pages.add(page); // Add the page to the list of pages to store in the symbol table
                 remainingRAM--; // Decrease the remaining RAM
@@ -449,7 +453,7 @@ public class MMU {
             }
 
             // Move the iterator to the next position. If it reaches the end, then start from the beginning
-            if (ramIterator == Computer.MAX_RAM_KB - 1) {
+            if (ramIterator == Computer.MAX_RAM_PAGES - 1) {
                 ramIterator = 0;
             } else {
                 ramIterator++;
@@ -476,12 +480,13 @@ public class MMU {
                     // Store the page in the real memory
                     page.setInRealMemory(true);
                     page.setPhysicalAddress(ptr);
+                    page.setIndexOnMemory(ramIterator);
                     realMemory[ramIterator] = page;
                     remainingRAM--; // Decrease the remaining RAM
                 }
 
                 // Move the iterator to the next position. If it reaches the end, then start from the beginning
-                if (ramIterator == Computer.MAX_RAM_KB - 1) {
+                if (ramIterator == Computer.MAX_RAM_PAGES - 1) {
                     ramIterator = 0;
                 } else {
                     ramIterator++;
@@ -729,7 +734,7 @@ public class MMU {
      * Reset the memory management unit
      */
     public void reset() {
-        this.remainingRAM = Computer.MAX_RAM_KB;
+        this.remainingRAM = Computer.MAX_RAM_PAGES;
         this.virtualMemory.clear();
         Arrays.fill(realMemory, null);
         this.symbolTable.clear();
@@ -777,12 +782,11 @@ public class MMU {
         String loaded = inRealMemory ? "Yes" : "No";
         String pageId = String.valueOf(page.getId());
         String pid = String.valueOf(page.getPId());
-        String lAddr = "";
-        String mAddr = inRealMemory ? String.valueOf(page.getPhysicalAddress()) : "N/A";
-        String dAddr = inRealMemory ? "N/A" : String.valueOf(page.getPhysicalAddress()); // Si está en virtual, asigna la dirección física
+        String lAddr = inRealMemory ? String.valueOf(page.getPhysicalAddress()) : "N/A";
+        String mAddr = page.getIndexOnMemory() == -1 ? "" : String.valueOf(page.getIndexOnMemory());
         String loadedT = String.valueOf(page.getLoadedTime());
         String mark = page.getReferenceBit() ? "1" : "0";
 
-        return new PageDetails(pageId, pid, loaded, lAddr, mAddr, dAddr, loadedT, mark);
+        return new PageDetails(pageId, pid, loaded, lAddr, mAddr, loadedT, mark);
     }
 }

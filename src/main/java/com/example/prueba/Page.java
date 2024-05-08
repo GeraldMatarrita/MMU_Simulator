@@ -7,6 +7,7 @@ public class Page {
     private final int pId;
     private boolean referenceBit = true; // SC
     private int loadedTime;
+    private int indexOnMemory;
 
     public Page(Integer pId, Integer pageID) {
         this.id = pageID;
@@ -51,6 +52,14 @@ public class Page {
 
     public void setLoadedTime(int loadedTime) {
         this.loadedTime += loadedTime;
+    }
+
+    public int getIndexOnMemory() {
+        return indexOnMemory;
+    }
+
+    public void setIndexOnMemory(int indexOnMemory) {
+        this.indexOnMemory = indexOnMemory;
     }
 
     @Override

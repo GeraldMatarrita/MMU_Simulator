@@ -1,5 +1,6 @@
 package com.example.prueba;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -91,7 +92,7 @@ public class Main {
 //            System.err.println("Execution was interrupted: " + e.getMessage());
 //        }
 
-//        mmuOptimal.executeAll(instructions);
+        mmuOptimal.executeAll(instructions);
         System.out.println("----------------------------------");
         System.out.println("Optimal Algorithm");
         System.out.println("----------------------------------");
@@ -105,7 +106,7 @@ public class Main {
         System.out.println("----------------------------------");
         System.out.println("Other Algorithm");
         System.out.println("----------------------------------");
-//        mmuOther.executeAll(instructions);
+        mmuOther.executeAll(instructions);
         mmuOther.printRealMemory();
         mmuOther.printVirtualMemory();
         mmuOther.printSymbolTable();

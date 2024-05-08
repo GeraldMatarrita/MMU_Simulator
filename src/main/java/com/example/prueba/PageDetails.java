@@ -12,13 +12,12 @@ public class PageDetails {
     private StringProperty dAddr;
     private StringProperty loadedT;
     private StringProperty mark;
-    public PageDetails(String pageId, String pid, String loaded, String lAddr, String mAddr, String dAddr, String loadedT, String mark) {
+    public PageDetails(String pageId, String pid, String loaded, String lAddr, String mAddr, String loadedT, String mark) {
         this.pageId = new SimpleStringProperty(pageId);
         this.pid = new SimpleStringProperty(pid);
         this.loaded = new SimpleStringProperty(loaded);
         this.lAddr = new SimpleStringProperty(lAddr);
         this.mAddr = new SimpleStringProperty(mAddr);
-        this.dAddr = new SimpleStringProperty(dAddr);
         this.loadedT = new SimpleStringProperty(loadedT);
         this.mark = new SimpleStringProperty(mark);
     }
