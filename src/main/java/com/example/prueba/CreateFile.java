@@ -39,7 +39,7 @@ public class CreateFile {
     private static Random random = new Random();
     private static final List<IdRecord> idList = new ArrayList<>();
     private static final String FILENAME = "instructions.txt";
-    private static int idCounter = 0;
+    private static int idCounter = 1;
 
     public static void writeInstructionsToFile(int instrucciones, int procesos, int seed) throws IOException {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(FILENAME))) {
@@ -71,8 +71,9 @@ public class CreateFile {
                         }
                     } else if (chance < PORCENTAJE_KILL + PORCENTAJE_DELETE && deleteCount < instructionCount * PORCENTAJE_DELETE) {
                         int indexToDelete = getRandomIndice();
+                        int indexToPrint = indexToDelete + 1;
                         if (indexToDelete != -1) {
-                            instruction = "delete(" + indexToDelete + ")";
+                            instruction = "delete(" + indexToPrint + ")";
                             idList.get(indexToDelete).isDeleted = true; // Marca el índice seleccionado como eliminado
                             deleteCount++;
                         } else {
@@ -80,8 +81,9 @@ public class CreateFile {
                         }
                     } else if (chance < PORCENTAJE_KILL + PORCENTAJE_DELETE + PORCENTAJE_USE && useCount < instructionCount * PORCENTAJE_USE) {
                         int idUse = getRandomIndice();
+                        int indexToPrint = idUse + 1;
                         if (idUse != -1) {
-                            instruction = "use(" + idUse + ")";
+                            instruction = "use(" + indexToPrint + ")";
                             useCount++;
                         } else {
                             instruction = generateNewInstruction();

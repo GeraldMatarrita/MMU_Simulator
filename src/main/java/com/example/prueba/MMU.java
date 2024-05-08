@@ -27,11 +27,11 @@ public class MMU {
         this.mruPageStack = new Stack<>();
         this.processesIds = new HashSet<>();
         this.fragmentedPages = new HashMap<>();
-        this.ptrCounter = 0;
+        this.ptrCounter = 1;
         this.paginationAlgorithm = 0;
         this.pageFaults = 0;
         this.instructions = null;
-        this.pageIdCounter = 0;
+        this.pageIdCounter = 1;
     }
 
     public Integer getFragmentation() {
@@ -608,6 +608,7 @@ public class MMU {
      */
     public void executeInstruction(String instruction) {
         // Ask the user to choose a pagination algorithm if it has not been chosen
+
         if (paginationAlgorithm == 0) {
             choosePaginationAlgorithm();
         }
@@ -740,11 +741,11 @@ public class MMU {
         this.mruPageStack.clear();
         this.processesIds.clear();
         this.fragmentedPages.clear();
-        this.ptrCounter = 0;
+        this.ptrCounter = 1;
         this.pageFaults = 0;
         this.pageHits = 0;
         this.currentIndex = 0;
-        this.pageIdCounter = 0;
+        this.pageIdCounter = 1;
         this.remainingRAM = Computer.MAX_RAM_PAGES;
         this.instructions = null;
     }
