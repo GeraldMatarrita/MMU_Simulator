@@ -29,13 +29,13 @@ public class CreateFile {
         }
     }
 
-    private static int CANTIDAD_PROCESOS = 50;
-    private static int CANTIDAD_OPERACIONES = 10;
-    private static final double PORCENTAJE_KILL = 0.10;
-    private static final double PORCENTAJE_DELETE = 0.15;
-    private static final double PORCENTAJE_USE = 0.30;
-    private static final int MIN_SIZE = 1000;
-    private static final int MAX_SIZE = 5000;
+    private static int CANTIDAD_PROCESOS = 50; // Cantidad de procesos
+    private static int CANTIDAD_OPERACIONES = 10; // Cantidad de instrucciones
+    private static final double PORCENTAJE_KILL = 0.10; // Probabilidad de operación kill
+    private static final double PORCENTAJE_DELETE = 0.15; // Probabilidad de operación delete
+    private static final double PORCENTAJE_USE = 0.30; // Probabilidad de operación use
+    private static final int MIN_SIZE = 500; // Tamaño mínimo de un proceso
+    private static final int MAX_SIZE = 5000; // Tamaño máximo de un proceso
     private static Random random = new Random();
     private static final List<IdRecord> idList = new ArrayList<>();
     private static final String FILENAME = "instructions.txt";

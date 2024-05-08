@@ -9,7 +9,6 @@ public class PageDetails {
     private StringProperty loaded;
     private StringProperty lAddr;
     private StringProperty mAddr;
-    private StringProperty dAddr;
     private StringProperty loadedT;
     private StringProperty mark;
     public PageDetails(String pageId, String pid, String loaded, String lAddr, String mAddr, String loadedT, String mark) {
@@ -28,7 +27,6 @@ public class PageDetails {
     public String getLoaded() { return loaded.get(); }
     public String getLAddr() { return lAddr.get(); }
     public String getMAddr() { return mAddr.get(); }
-    public String getDAddr() { return dAddr.get(); }
     public String getLoadedT() { return loadedT.get(); }
     public String getMark() { return mark.get(); }
 
@@ -38,7 +36,6 @@ public class PageDetails {
     public void setLoaded(String value) { loaded.set(value); }
     public void setLAddr(String value) { lAddr.set(value); }
     public void setMAddr(String value) { mAddr.set(value); }
-    public void setDAddr(String value) { dAddr.set(value); }
     public void setLoadedT(String value) { loadedT.set(value); }
     public void setMark(String value) { mark.set(value); }
 
@@ -48,7 +45,19 @@ public class PageDetails {
     public StringProperty loadedProperty() { return loaded; }
     public StringProperty lAddrProperty() { return lAddr; }
     public StringProperty mAddrProperty() { return mAddr; }
-    public StringProperty dAddrProperty() { return dAddr; }
     public StringProperty loadedTProperty() { return loadedT; }
     public StringProperty markProperty() { return mark; }
+
+    @Override
+    public String toString() {
+        return "PageDetails{" +
+                "pageId=" + pageId.toString() +
+                ", pid=" + pid.toString() +
+                ", loaded=" + loaded.toString() +
+                ", lAddr=" + lAddr.toString() +
+                ", mAddr=" + mAddr.toString() +
+                ", loadedT=" + loadedT.toString() +
+                ", mark=" + mark.toString() +
+                '}';
+    }
 }

@@ -9,8 +9,8 @@ public class MMU {
     private final Page[] realMemory; // Real memory  (physical memory/RAM)
     private final Map<Integer, List<Page>> symbolTable; // Symbol table (Memory map)
     private final Stack<Page> mruPageStack; // Stack to store the most recently used pages
-    private List<String> instructions;
-    private int pageIdCounter;
+    private List<String> instructions; // List of instructions to executeAll
+    private int pageIdCounter; // Counter for the page ID
     private int currentIndex = 0; // Index for MRU algorithm
     private int ptrCounter;  // Pointer counter for id
     private int paginationAlgorithm; // Number of the pagination algorithm chosen by the user
